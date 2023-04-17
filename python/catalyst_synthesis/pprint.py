@@ -12,7 +12,7 @@ from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt,
                       CondExpr, WhileLoopExpr, FDefStmt, Program, RetStmt,
                       ConstExpr, NoneExpr, POI, ForLoopExpr, ControlFlowStyle,
                       assert_never, isinstance_expr, isinstance_stmt, ExprLike, bless_expr,
-                      isinstance_exprlike, isinstance_array)
+                      isinstance_exprlike, isinstance_array, bless_poi)
 
 from .builder import (Builder)
 
@@ -265,10 +265,10 @@ def pstr_stmt(s:Stmt,
     else:
         assert_never(s)
 
-def pstr_poi(p:POI, state=None, opt=None, arg_expr=None) -> Tuple[List[str],str]:
+def pstr_poi(p:POI, state=None, opt=None, arg_expr=None, kwarg_expr=None) -> Tuple[List[str],str]:
     """ Pretty-print the point of insertion. """
     st = state if state is not None else PStrState(0,Suffix(0))
-    (lines, e) = pstr_expr(p.expr, st, opt, arg_expr) if p.expr else ([], "None")
+    (lines, e) = pstr_expr(p.expr, st, opt, arg_expr, kwarg_expr) if p.expr else ([], "None")
     return (sum((pstr_stmt(s, st, opt) for s in p.stmts),[]) +
             lines + _hi(st, opt, p), e)
 
@@ -284,7 +284,7 @@ def _builder_hint_printer(b):
 def pstr_builder(b:Builder, st=None, opt=None) -> Tuple[List[str],str]:
     """ Pretty-print the expression Builder """
     opt = opt if opt else PStrOptions(DEFAULT_CFSTYLE, _builder_hint_printer(b))
-    return pstr_poi(b.pois[0].poi, st, opt, arg_expr=[VRefExpr(VName('<?>'))])
+    return pstr_poi(b.pois[0].poi, st, opt, arg_expr=[bless_poi(VName('<?>'))], kwarg_expr=[])
 
 
 def pstr_prog(p:Program, state=None, opt=None) -> List[str]:
@@ -292,7 +292,7 @@ def pstr_prog(p:Program, state=None, opt=None) -> List[str]:
     return pstr_stmt(p, state, opt)
 
 
-def pstr(p:Union[Builder, Program, Stmt, ExprLike], default_cfstyle=DEFAULT_CFSTYLE) -> str:
+def pstr(p:Union[Builder, Program, Stmt, ExprLike, POI], default_cfstyle=DEFAULT_CFSTYLE) -> str:
     """ Prints nearly any object in this library into a multi-line string of Python code. """
     if isinstance(p, Builder):
         opt = PStrOptions(default_cfstyle, _builder_hint_printer(p))
@@ -305,7 +305,10 @@ def pstr(p:Union[Builder, Program, Stmt, ExprLike], default_cfstyle=DEFAULT_CFST
         elif isinstance_stmt(p):
             return '\n'.join(pstr_stmt(p, None, opt))
         elif isinstance_exprlike(p):
-            stmts,tail = pstr_expr(p, None, opt, arg_expr=[VRefExpr(VName("<?>"))])
+            stmts,tail = pstr_expr(p, None, opt, arg_expr=[bless_poi(VName("<?>"))], kwarg_expr=[])
+            return '\n'.join(stmts + [f"## {tail} ##"])
+        elif isinstance(p, POI):
+            stmts,tail = pstr_poi(p, None, opt, arg_expr=[bless_poi(VName("<?>"))], kwarg_expr=[])
             return '\n'.join(stmts + [f"## {tail} ##"])
         else:
             assert_never(p)

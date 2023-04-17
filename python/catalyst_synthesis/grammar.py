@@ -211,8 +211,12 @@ class Signature:
     args:Optional[List[str]]
     ret:str
 
-    def isfunc(self)->bool:
-        return self.args is not None
+    def isfunc(self, nargs:Optional[int]=None)->bool:
+        if nargs is None:
+            return (self.args is not None)
+        else:
+            return (self.args is not None) and len(self.args)==nargs
+
     def isval(self)->bool:
         return not self.isfunc()
 

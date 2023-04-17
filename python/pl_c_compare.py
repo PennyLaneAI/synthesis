@@ -54,6 +54,7 @@ sample_spec4:List[Expr] = [
 sample_spec5:List[Expr] = [
     gateExpr('qml.CPhaseShift10', 0, wires=[POI(), POI()]),
     gateExpr('qml.QubitStateVector', np.array([1.0, 0.0]), wires=[POI()]),
+    CondExpr(trueExpr, POI(), POI(), CFS.Default),
 ]
 
 gate_lib = [
