@@ -39,6 +39,8 @@ class POI:
         return cls.fromExpr(*args, **kwargs)
 
 
+POILike = Union[POI, "ExprLike"]
+
 
 @dataclass(frozen=True)
 class VName:
@@ -121,7 +123,7 @@ class WhileLoopExpr:
 class FCallExpr:
     """ Expression - calling a callable """
     expr: Union[VRefExpr, CondExpr, ForLoopExpr, WhileLoopExpr]
-    args: List[Expr]
+    args: List[POI]
 
     def __hash__(self):
         return hash((self.expr, tuple(self.args)))
@@ -135,8 +137,8 @@ def isinstance_exprlike(e:Any) -> bool:
 trueExpr = ConstExpr(True)
 falseExpr = ConstExpr(False)
 
-def callExpr(e:ExprLike, args:List[ExprLike]) -> FCallExpr:
-    return FCallExpr(bless_expr(e), [bless_expr(e) for e in args])
+def callExpr(e:ExprLike, args:List[POILike]) -> FCallExpr:
+    return FCallExpr(bless_expr(e), [bless_poi(e) for e in args])
 
 def lessExpr(a,b) -> FCallExpr:
     return callExpr(FName('<'),[a,b])
@@ -206,6 +208,14 @@ def bless_expr(e:ExprLike) -> Expr:
     else:
         assert_never(e)
 
+def bless_poi(x:POILike) -> POI:
+    if isinstance(x, POI):
+        return x
+    elif isinstance_exprlike(x):
+        return POI.fromExpr(bless_expr(x))
+    else:
+        assert_never(e)
+
 
 @dataclass
 class Signature:
@@ -249,7 +259,7 @@ def reduce_stmt_expr(e:Union[Stmt,Expr], f:Callable[[Union[Stmt,Expr],Acc],Acc],
     def _unpoi(poi):
         return poi.stmts + ([poi.expr] if poi.expr else [])
     if isinstance(e, FCallExpr):
-        return _down([e.expr] + e.args)
+        return _down([e.expr] + sum(map(_unpoi, e.args),[]))
     elif isinstance(e, CondExpr):
         return _down(_unpoi(e.trueBranch) + (_unpoi(e.falseBranch) if e.falseBranch else []))
     elif isinstance(e, ForLoopExpr):
@@ -296,17 +306,19 @@ def get_pois(e:Union[Stmt,Expr]) -> List[POI]:
             return [e.trueBranch] + ([e.falseBranch] if e.falseBranch else [])
         elif isinstance(e, FDefStmt):
             return [e.body]
+        elif isinstance(e, FCallExpr):
+            return e.args
         else:
             return []
     return reduce_stmt_expr(e, lambda e,acc: acc+_pois(e), [])
 
 
-def saturate_expr(e:ExprLike, args:Iterable[ExprLike]) -> Expr:
+def saturate_expr(e:ExprLike, args:Iterable[POILike]) -> Expr:
     e2 = bless_expr(deepcopy(e))
     s = signature(e2)
-    return FCallExpr(e2, [bless_expr(next(args)) for _ in s.args]) if s else e2
+    return FCallExpr(e2, [bless_poi(next(args)) for _ in s.args]) if s else e2
 
-def saturate_poi(e:ExprLike, args:Iterable[Union[POI,ExprLike]]) -> Expr:
+def saturate_poi(e:ExprLike, args:Iterable[POILike]) -> Expr:
     e2 = bless_expr(deepcopy(e))
     for poi in get_pois(e2):
         if poi.expr is None:

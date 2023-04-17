@@ -54,7 +54,7 @@ def bindAssign(poi1:POI, fpoi2:Callable[[Expr],POI]):
 def run(sample_spec=sample_spec1, gate_lib=gate_lib):
     arg = VName('arg')
 
-    def render(style):
+    def _render(style):
         return compilePOI(
             bindAssign(b.pois[0].poi,
                        lambda e: POI([AssignStmt(None,e)],FCallExpr(VRefExpr(FName("qml.state")),[]))),

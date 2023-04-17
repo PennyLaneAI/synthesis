@@ -122,8 +122,8 @@ def contextualize_expr(e:Expr, ctx:Optional[Context]=None) -> List[PWC]:
         contextualize_poi_inplace(e.body, ctx1, acc)
     elif isinstance(e, FCallExpr):
         acc.extend(contextualize_expr(e.expr, ctx))
-        for a in e.args:
-            acc.extend(contextualize_expr(a, ctx))
+        for apoi in e.args:
+            contextualize_poi_inplace(apoi, Context(parent=ctx), acc)
     else:
         pass
     return acc

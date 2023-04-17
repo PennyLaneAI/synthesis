@@ -20,7 +20,6 @@ from catalyst_synthesis.grammar import (Expr, RetStmt, FCallExpr, VName, FName, 
 
 from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprint, pstr,
                                        DEFAULT_CFSTYLE)
-
 from catalyst_synthesis.builder import build
 from catalyst_synthesis.exec import compilePOI, evalPOI, runPOI, wrapInMain
 from catalyst_synthesis.generator import control_flows
@@ -172,13 +171,11 @@ def test_build_mutable_layout():
 
     poi2 = POI.fromExpr(c)
     b.update(1, poi2)
-    # pprint(b)
     assert len(b.pois)==4
     assert b.pois[0].poi is b_poi
     assert b.pois[1].poi is l_poi
     assert b.pois[2].poi is c_poi1
     assert b.pois[3].poi is c_poi2
-    # pprint(b)
     b.update(0, POI())
     assert len(b.pois)==1
 
@@ -189,10 +186,10 @@ def test_build_destructive_update():
     b = build(POI())
     b.update(0, POI.fE(saturate_expr1(l, 0)), ignore_nonempty=False)
     b.update(1, POI.fE(saturate_expr1(c, 1)), ignore_nonempty=False)
-    assert len(b.pois)==4
+    assert len(b.pois)==5
     s1 = pstr_builder(b)
     b.update(0, b.pois[0].poi, ignore_nonempty=False)
-    assert len(b.pois)==4
+    assert len(b.pois)==5
     s2 = pstr_builder(b)
     assert s1 == s2
 
@@ -220,131 +217,3 @@ def test_run(use_qjit, qnode_device, scalar):
     assert_allclose(val, res)
 
 
-
-# def test_build_context():
-#     l = WhileLoopExpr(VName("i"), trueExpr, POI(), ControlFlowStyle.Catalyst)
-#     b = build(POI())
-
-# def run_build_controlflow(o, i):
-#     d = ConstExpr(0)
-#     i2 = bind1(part1(i), lambda vs: (lambda _ : vs[0] if vs else d))
-#     o2 = bind1(part1(o), lambda vs: (lambda poi: closeargs(i2(poi), vs[0]) if vs else d))
-#     pprint(o2(POI()))
-
-#     # pprint(build(RetStmt(part1(o)(POI()))).insert_statement(0,RetStmt(part1(i)(POI()))))
-#     # pprint(build(RetStmt(part1(o)(POI()))).insert_statement(0,RetStmt(ConstExpr(33))))
-#     # pprint(build(POI.fromExpr(part1(o)(POI()))).append_expr(0, lambda _ : ConstExpr(33)))
-#     b = build(
-#         POI()
-#     ).append_expr(
-#         0, lambda ctx, var: closeargs(part1(o)(POI()),ConstExpr(0))
-#     ).append_expr(
-#         1, lambda ctx, var: closeargs(part1(i)(POI()),VRefExpr(ctx.vscope[-1]))
-#     ).append_expr(
-#         2, lambda ctx, var: VRefExpr(ctx.vscope[-1])
-#     )
-#     # part1(i)(POI.fromExpr(VRefExpr(ctx.vscope[-1]))
-#     # print(b)
-#     pprint(b)
-#     # pprint(build(POI.fromExpr(part1(o)(POI()))).append_expr(0, lambda var : part1(i)(POI.fromExpr(var))))
-
-# @given(o=one_of([whileloops(), forloops(), conds()]),
-#        i=one_of([whileloops(), forloops(), conds()]))
-# @settings(max_examples=1)
-# def test_build_controlflow(o, i):
-#     d = ConstExpr(0)
-#     i2 = bind1(part1(i), lambda var: var[0] if var else d)
-#     o2 = bind1(part1(o), lambda var: (lambda poi: closeargs(i2(poi), var[0]) if var else d))
-#     pprint(o2(POI()))
-#     # assert False
-
-# sample_spec:Dict[Expr,int] = {
-#     WhileLoopExpr(VName("i"), trueExpr, POI(), ControlFlowStyle.Catalyst) : 1,
-#     ForLoopExpr(VName("i"), ConstExpr(0), ConstExpr(10), POI(), ControlFlowStyle.Catalyst) : 2,
-#     # CondExpr(trueExpr, POI(), POI(), ControlFlowStyle.Catalyst) : 1,
-# }
-
-# def run_greedy():
-#     for b in control_flows(sample_spec):
-#         pprint(b)
-
-
-sample_spec:List[Expr] = [
-    # WhileLoopExpr(VName("i"), trueExpr, POI(), CFS.Catalyst) : 1,
-    WhileLoopExpr(VName("j1"), lessExpr(VName("j1"),2), POI(), CFS.Default),
-    ForLoopExpr(VName("k1"), POI.fE(1), POI.fE(2), POI(), CFS.Default, VName("k2")),
-    # CondExpr(trueExpr, POI(), POI(), CFS.Catalyst) : 1,
-]
-
-gate_lib = [
-    (FName("qml.Hadamard"), Signature(['*'],'*')),
-    (FName("qml.X"), Signature(['*'],'*')),
-]
-
-def bindAssign(poi1:POI, fpoi2:Callable[[Expr],POI]):
-    poi2 = fpoi2(poi1.expr)
-    return bind(poi1, poi2, poi2.expr)
-
-
-def run():
-    arg = VName('arg')
-    for b in control_flows(sample_spec, gate_lib, [arg]):
-        print("1. Builder:")
-        pprint(b)
-        print("1. Press Enter to compile")
-        input()
-        o1,code1 = compilePOI(
-            bindAssign(b.pois[0].poi,
-                       lambda e: POI([AssignStmt(None,e)],FCallExpr(VRefExpr(FName("qml.state")),[]))),
-            use_qjit=True, name="main", qnode_wires=3, qnode_device="lightning.qubit", args=[arg],
-            default_cfstyle=ControlFlowStyle.Catalyst)
-        o2,code2 = compilePOI(
-            bindAssign(b.pois[0].poi,
-                       lambda e: POI([AssignStmt(None,e)],FCallExpr(VRefExpr(FName("qml.state")),[]))),
-            use_qjit=False, name="main", qnode_wires=3, args=[arg],
-            default_cfstyle=ControlFlowStyle.Python)
-        print("2. Compiled code:")
-        print(code1)
-        print("(^^^ Catalyst, Python vvv)")
-        print(code2)
-        print("2. Press Enter to eval")
-        input()
-        r1 = evalPOI(o1, name="main", args=[(arg,1)])
-        r2 = evalPOI(o2, name="main", args=[(arg,1)])
-        print("3. Evaluation result:")
-        print(r1)
-        print(r2)
-        assert_allclose(r1, r2)
-        input()
-
-
-
-sample_spec2:List[Expr] = [
-    # WhileLoopExpr(VName("i"), trueExpr, POI(), CFS.Catalyst) : 1,
-    ForLoopExpr(VName("k1"), POI(), POI(), POI(), CFS.Default, VName("k2")),
-    # CondExpr(trueExpr, POI(), POI(), CFS.Catalyst) : 1,
-]
-
-def run2():
-    arg = VName('arg')
-    for b in control_flows(sample_spec2, [], [arg]):
-        print("1. Builder:")
-        pprint(b)
-        print("1. Press Enter to compile")
-        input()
-        o1,code1 = compilePOI(
-            bindAssign(b.pois[0].poi,
-                       lambda e: POI([AssignStmt(None,e)],FCallExpr(VRefExpr(FName("qml.state")),[]))),
-            use_qjit=True, name="main", qnode_wires=3, qnode_device="lightning.qubit", args=[arg],
-            default_cfstyle=ControlFlowStyle.Catalyst)
-        o2,code2 = compilePOI(
-            bindAssign(b.pois[0].poi,
-                       lambda e: POI([AssignStmt(None,e)],FCallExpr(VRefExpr(FName("qml.state")),[]))),
-            use_qjit=False, name="main", qnode_wires=3, args=[arg],
-            default_cfstyle=ControlFlowStyle.Python)
-        print("2. Compiled code:")
-        print(code1)
-        print("(^^^ Catalyst, Python vvv)")
-        print(code2)
-        # print("2. Press Enter to eval")
-        input()

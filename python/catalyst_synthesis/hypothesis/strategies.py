@@ -9,7 +9,7 @@ from hypothesis.strategies import (text, decimals, integers, characters, from_re
 
 from ..grammar import (VName, FName, FDefStmt, CondExpr, ForLoopExpr, POI, WhileLoopExpr, trueExpr,
                       falseExpr, ControlFlowStyle, ConstExpr, Expr, VRefExpr, bindUnary, signature,
-                      NoneExpr, FName, FDefStmt, FCallExpr, lessExpr, eqExpr)
+                      NoneExpr, FName, FDefStmt, FCallExpr, lessExpr, eqExpr, callExpr)
 
 from ..builder import build
 from ..pprint import pprint
@@ -88,9 +88,9 @@ def whileloops(draw,
                 body=POI(),
                 style=style)
 
-qml_X = FCallExpr(VRefExpr(FName("qml.X")),[ConstExpr(0)])
-qml_H = FCallExpr(VRefExpr(FName("qml.Hadamard")),[ConstExpr(0)])
-qml_state = FCallExpr(VRefExpr(FName("qml.state")),[])
+qml_X = callExpr(FName("qml.X"),[0])
+qml_H = callExpr(FName("qml.Hadamard"),[0])
+qml_state = callExpr(FName("qml.state"),[])
 qgates = sampled_from([qml_X, qml_H])
 qmeasurements = sampled_from([qml_state])
 

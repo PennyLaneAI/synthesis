@@ -4,7 +4,7 @@ from copy import deepcopy
 from functools import reduce
 from itertools import permutations, product, chain, cycle
 
-from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt, CondExpr,
+from .grammar import (VName, FName, Expr, Stmt, VRefExpr, AssignStmt, CondExpr,
                       WhileLoopExpr, FDefStmt, Program, RetStmt, ConstExpr, POI, ForLoopExpr,
                       WhileLoopExpr, trueExpr, falseExpr, ControlFlowStyle as CFS, assert_never,
                       NoneExpr, saturate_expr1, addExpr, lessExpr, Signature,

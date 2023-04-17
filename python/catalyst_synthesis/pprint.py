@@ -87,8 +87,9 @@ def _style(s, opt):
 def _isinfix(e:FCallExpr) -> bool:
     return isinstance(e.expr, VRefExpr) and all(c in "!>=<=+-/*" for c in e.expr.vname.val) and len(e.args)==2
 
-def _parens(e:Expr, expr_str:str, opt) -> str:
-    if isinstance(e, (VRefExpr, ConstExpr)) or (isinstance(e, FCallExpr) and not _isinfix(e)):
+def _parens(e:POI, expr_str:str, opt) -> str:
+    if isinstance(e.expr, (VRefExpr, ConstExpr)) or (isinstance(e.expr, FCallExpr) and not
+                                                     _isinfix(e.expr)):
         return expr_str
     else:
         return f"({expr_str})"
@@ -96,7 +97,7 @@ def _parens(e:Expr, expr_str:str, opt) -> str:
 def pstr_expr(expr:ExprLike,
               state:Optional[PStrState]=None,
               opt:Optional[PStrOptions]=None,
-              arg_expr:Optional[List[Expr]]=None) -> Tuple[List[str],str]:
+              arg_expr:Optional[List[POI]]=None) -> Tuple[List[str],str]:
     e = bless_expr(expr)
     st = state if state else PStrState(0,Suffix(0))
     if isinstance(e, FCallExpr):
@@ -143,7 +144,7 @@ def pstr_expr(expr:ExprLike,
         assert len(arg_expr)==1
         if _style(e.style, opt) == ControlFlowStyle.Python:
             st1 = st.tabulate()
-            accArg = pstr_stmt(AssignStmt(e.statevar, arg_expr[0]), st, opt) if e.statevar else []
+            accArg = pstr_stmt(AssignStmt(e.statevar, arg_expr[0].expr), st, opt) if e.statevar else []
             accL, lexprL = pstr_poi(e.lbound, st, opt)
             accU, lexprU = pstr_poi(e.ubound, st, opt)
             return (
@@ -155,7 +156,7 @@ def pstr_expr(expr:ExprLike,
                 _hi(st1, opt, e.body), (e.statevar.val if e.statevar else "None"))
 
         elif _style(e.style, opt) == ControlFlowStyle.Catalyst:
-            accArg, sarg = pstr_expr(arg_expr[0], st, opt)
+            accArg, sarg = pstr_expr(arg_expr[0].expr, st, opt)
             accL, lexprL = pstr_poi(e.lbound, st, opt)
             accU, lexprU = pstr_poi(e.ubound, st, opt)
             st1, nforloop = st.tabulate().issue("forloop")
@@ -172,10 +173,12 @@ def pstr_expr(expr:ExprLike,
     elif isinstance(e, WhileLoopExpr):
         assert len(arg_expr)==1
         if _style(e.style, opt) == ControlFlowStyle.Python:
-            accArg = pstr_stmt(AssignStmt(e.statevar, arg_expr[0]), st, opt)
+            accPoi, spoi = pstr_poi(arg_expr[0], st, opt)
+            accArg = pstr_stmt(AssignStmt(e.statevar, VRefExpr(VName(spoi))), st, opt)
             accCond, lexpr = pstr_expr(e.cond, st, opt)
             st1, svar = st.tabulate().issue("_whileloop")
             return (
+                accPoi +
                 accArg +
                 accCond +
                 _in(st, [f"while {lexpr}:"]) +
@@ -184,7 +187,7 @@ def pstr_expr(expr:ExprLike,
                 _hi(st1, opt, e.body),
                 e.statevar.val)
         elif _style(e.style, opt) == ControlFlowStyle.Catalyst:
-            accArg, sarg = pstr_expr(arg_expr[0], st, opt)
+            accArg, sarg = pstr_poi(arg_expr[0], st, opt)
             accCond, lexpr = pstr_expr(e.cond, st, opt)
             st1, nwhileloop = st.tabulate().issue("whileloop")
             return (
@@ -204,13 +207,12 @@ def pstr_expr(expr:ExprLike,
         else:
             acc_body,args = list(),list()
             for ea in arg_expr:
-                lss,le = pstr_expr(ea, state, opt)
+                lss,le = pstr_poi(ea, state, opt)
                 acc_body.extend(lss)
                 args.append(le)
             return acc_body, (
                 f"{_parens(arg_expr[0], args[0], opt)} {e.vname.val} {_parens(arg_expr[1], args[1], opt)}"
                 if len(arg_expr)==2 and _isinfix(FCallExpr(e, arg_expr)) else
-                # if (all(c in "!>=<=+-/*" for c in e.vname.val) and len(arg_expr)==2) else
                 f"{e.vname.val}({', '.join(args)})" )
     elif isinstance(e, ConstExpr):
         if isinstance(e.val, bool): # Should be above 'int'
@@ -259,8 +261,8 @@ def pstr_stmt(s:Stmt,
 
 def pstr_poi(p:POI, state=None, opt=None, arg_expr=None) -> Tuple[List[str],str]:
     st = state if state is not None else PStrState(0,Suffix(0))
-    lines, e = pstr_expr(p.expr, st, opt, arg_expr)
-    return (sum((pstr_stmt(s, st, opt) for s in p.stmts), []) +
+    (lines, e) = pstr_expr(p.expr, st, opt, arg_expr) if p.expr else ([], "None")
+    return (sum((pstr_stmt(s, st, opt) for s in p.stmts),[]) +
             lines + _hi(st, opt, p), e)
 
 def builder_hint_printer(b):
