@@ -13,7 +13,7 @@ from .grammar import (VName, FName, Expr, Stmt, VRefExpr, AssignStmt, CondExpr,
 from .builder import Builder, contextualize_expr, build
 from .pprint import pprint
 
-def npois(e:Expr) -> int:
+def nemptypois(e:Expr) -> int:
     return len([p for p in contextualize_expr(e) if p.poi.isempty()])
 
 
@@ -26,10 +26,10 @@ def control_flows(expr_lib:List[Expr],
                   free_vars:List[VName]=[]) -> Iterable[Builder]:
     gs = gate_lib if gate_lib else [None]
     es = expr_lib
-    ps = sum([npois(e) for e in expr_lib], 1)
+    ps = sum([nemptypois(e) for e in expr_lib], 1)
     vs = sum([get_vars(e) for e in expr_lib], free_vars)
     nargs = max(chain([0],(len(s.args) for _,s in gate_lib))) + \
-            max(len(signature(e).args) for e in expr_lib)
+            max(len(signature(e).args if signature(e).args else []) for e in expr_lib)
     for e_sample in permutations(es):
         for p_sample in permutations(range(ps)):
             for g_sample in product(*[gs]*len(p_sample)):

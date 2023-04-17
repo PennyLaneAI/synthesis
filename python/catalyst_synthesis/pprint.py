@@ -8,20 +8,11 @@ from itertools import chain
 
 from dataclasses import dataclass
 
-try:
-    from jax import Array as JaxArray
-except ImportError:
-    class JaxArray:
-        def __str__(self):
-            return "FakeJaxArray()"
-
-from pennylane.numpy import tensor as PnpArray
-
 from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt,
                       CondExpr, WhileLoopExpr, FDefStmt, Program, RetStmt,
                       ConstExpr, NoneExpr, POI, ForLoopExpr, ControlFlowStyle,
                       assert_never, isinstance_expr, isinstance_stmt, ExprLike, bless_expr,
-                      isinstance_exprlike)
+                      isinstance_exprlike, isinstance_array)
 
 from .builder import (Builder)
 
@@ -35,6 +26,7 @@ CFS = ControlFlowStyle
 
 @dataclass
 class PStrOptions:
+    """ Immutable options to carry around the pretty-printing procedures """
     default_cfstyle:ControlFlowStyle = DEFAULT_CFSTYLE
     hint:Optional[HintPrinter] = None
 
@@ -46,20 +38,17 @@ class Suffix:
 
 @dataclass
 class PStrState:
-    """ The state to carry around the pretty-printing procedures. """
+    """ Mutable state to carry around the pretty-printing procedures. """
     indent:int = 0
     catalyst_cf_suffix:int = Suffix(0)
 
     def tabulate(self) -> "PStrState":
         return PStrState(self.indent+1, self.catalyst_cf_suffix)
-        # self.indent+=1
-        # return self
+
     def issue(self, name) -> Tuple["PStrState",str]:
         self.catalyst_cf_suffix.val+=1
         s2 = PStrState(self.indent, self.catalyst_cf_suffix)
         return s2, f"{name}{self.catalyst_cf_suffix.val-1}"
-        # self.catalyst_cf_suffix+=1
-        # return self, f"{name}{self.catalyst_cf_suffix-1}"
 
 def _in(st:PStrState, lines:List[str]) -> List[str]:
     """ Indent `lines` according to the current settings """
@@ -86,7 +75,7 @@ def _style(s, opt):
 
 def _isinfix(e:FCallExpr) -> bool:
     return isinstance(e.expr, VRefExpr) and \
-        all(c in "!>=<=+-/*" for c in e.expr.vname.val) and len(e.args)==2 and len(e.kwargs)==0
+        all(c in "!>=<+-/*%" for c in e.expr.vname.val) and len(e.args)==2 and len(e.kwargs)==0
 
 def _parens(e:POI, expr_str:str, opt) -> str:
     if isinstance(e.expr, (VRefExpr, ConstExpr)) or (isinstance(e.expr, FCallExpr) and not
@@ -100,6 +89,10 @@ def pstr_expr(expr:ExprLike,
               opt:Optional[PStrOptions]=None,
               arg_expr:Optional[List[POI]]=None,
               kwarg_expr:Optional[List[Tuple[str,POI]]]=None) -> Tuple[List[str],str]:
+    """ Renders an expression-like value to a code. Returns a tuple of zero or more Python statement
+    strings and a Python expression string.
+
+    FIXME: Get rid of `arg_expr` / `kwarg_expr` -style recursive message-passing. """
     e = bless_expr(expr)
     st = state if state else PStrState(0,Suffix(0))
     if isinstance(e, FCallExpr):
@@ -219,10 +212,13 @@ def pstr_expr(expr:ExprLike,
                 lss,le = pstr_poi(v, state, opt)
                 acc_body.extend(lss)
                 kwargs.append((k,le))
-            return acc_body, (
-                f"{_parens(arg_expr[0], args[0], opt)} {e.vname.val} {_parens(arg_expr[1], args[1], opt)}"
-                if len(arg_expr)==2 and _isinfix(FCallExpr(e, arg_expr, kwarg_expr)) else
-                f"{e.vname.val}({', '.join(args + [(k+'='+v) for k,v in kwargs])})" )
+            if e.vname.val == '[]':
+                assert len(kwarg_expr) == 0, "Brackets doesn't accept kwargs"
+                return acc_body, f"[{', '.join(args)}]"
+            elif len(arg_expr)==2 and _isinfix(FCallExpr(e, arg_expr, kwarg_expr)):
+                return acc_body, f"{_parens(arg_expr[0], args[0], opt)} {e.vname.val} {_parens(arg_expr[1], args[1], opt)}"
+            else:
+                return acc_body, f"{e.vname.val}({', '.join(args + [(k+'='+v) for k,v in kwargs])})"
     elif isinstance(e, ConstExpr):
         if isinstance(e.val, bool): # Should be above 'int'
             return [],f"{e.val}"
@@ -232,9 +228,9 @@ def pstr_expr(expr:ExprLike,
             return [],f"{e.val}"
         elif isinstance(e.val, complex):
             return [],f"{e.val}"
-        elif isinstance(e.val, JaxArray):
-            return [],f"Array({e.val.tolist()},dtype={str(e.val.dtype)})"
-        elif isinstance(e.val, PnpArray):
+        elif isinstance(e.val, str):
+            return [],f"\"{e.val}\""
+        elif isinstance_array(e.val):
             return [],f"Array({e.val.tolist()},dtype={str(e.val.dtype)})"
         else:
             assert_never(e.val)
@@ -244,6 +240,7 @@ def pstr_expr(expr:ExprLike,
 def pstr_stmt(s:Stmt,
               state:Optional[PStrState]=None,
               opt:Optional[PStrOptions]=None) -> List[str]:
+    """ Pretty-print a statement `s` into a lines of Python code """
     st:PStrState = state if state is not None else PStrState(0,Suffix(0))
     if isinstance(s, AssignStmt):
         acc, lexpr = pstr_expr(s.expr, st, opt)
@@ -269,12 +266,13 @@ def pstr_stmt(s:Stmt,
         assert_never(s)
 
 def pstr_poi(p:POI, state=None, opt=None, arg_expr=None) -> Tuple[List[str],str]:
+    """ Pretty-print the point of insertion. """
     st = state if state is not None else PStrState(0,Suffix(0))
     (lines, e) = pstr_expr(p.expr, st, opt, arg_expr) if p.expr else ([], "None")
     return (sum((pstr_stmt(s, st, opt) for s in p.stmts),[]) +
             lines + _hi(st, opt, p), e)
 
-def builder_hint_printer(b):
+def _builder_hint_printer(b):
     def _hp(poi:POI) -> List[str]:
         for poic in b.pois:
             if poi is poic.poi:
@@ -282,9 +280,12 @@ def builder_hint_printer(b):
         return []
     return _hp
 
+
 def pstr_builder(b:Builder, st=None, opt=None) -> Tuple[List[str],str]:
-    opt = opt if opt else PStrOptions(DEFAULT_CFSTYLE, builder_hint_printer(b))
+    """ Pretty-print the expression Builder """
+    opt = opt if opt else PStrOptions(DEFAULT_CFSTYLE, _builder_hint_printer(b))
     return pstr_poi(b.pois[0].poi, st, opt, arg_expr=[VRefExpr(VName('<?>'))])
+
 
 def pstr_prog(p:Program, state=None, opt=None) -> List[str]:
     """ Pretty-print the program """
@@ -292,11 +293,9 @@ def pstr_prog(p:Program, state=None, opt=None) -> List[str]:
 
 
 def pstr(p:Union[Builder, Program, Stmt, ExprLike], default_cfstyle=DEFAULT_CFSTYLE) -> str:
-    """ Prints the program on the console
-    FIXME: Find out how not to repeat Stmt and Expr definitions
-    """
+    """ Prints nearly any object in this library into a multi-line string of Python code. """
     if isinstance(p, Builder):
-        opt = PStrOptions(default_cfstyle, builder_hint_printer(p))
+        opt = PStrOptions(default_cfstyle, _builder_hint_printer(p))
         lines, tail = pstr_builder(p, None, opt)
         return '\n'.join(lines+[f"## {tail} ##"])
     else:
@@ -313,5 +312,6 @@ def pstr(p:Union[Builder, Program, Stmt, ExprLike], default_cfstyle=DEFAULT_CFST
 
 
 def pprint(p:Union[Builder, Program, Stmt, ExprLike], default_cfstyle=CFS.Catalyst) -> None:
+    """ Prints nearly any object in this library to a terminal. """
     print(pstr(p, default_cfstyle=default_cfstyle))
 

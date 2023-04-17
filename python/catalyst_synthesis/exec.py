@@ -19,8 +19,8 @@ try:
 except ImportError:
     CATALYST_LOADED = False
 
-from .grammar import (Expr, Stmt, RetStmt, FDefStmt, VName, FName, VRefExpr, signature as
-                      expr_signature, isinstance_expr, POI, ControlFlowStyle)
+from .grammar import (Expr, Stmt, RetStmt, FDefStmt, VName, FName, VRefExpr, isinstance_expr, POI,
+                      ControlFlowStyle)
 from .pprint import pstr_stmt, pstr_expr, pprint, PStrOptions
 from .builder import build
 

@@ -1,6 +1,7 @@
 from typing import Union, List, Optional, NoReturn, Callable, Tuple, Any, Set
 from dataclasses import dataclass
 from copy import deepcopy
+from itertools import chain
 
 from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt,
                       CondExpr, WhileLoopExpr, FDefStmt, Program, RetStmt,
@@ -122,8 +123,8 @@ def contextualize_expr(e:Expr, ctx:Optional[Context]=None) -> List[PWC]:
         contextualize_poi_inplace(e.body, ctx1, acc)
     elif isinstance(e, FCallExpr):
         acc.extend(contextualize_expr(e.expr, ctx))
-        for apoi in e.args:
-            contextualize_poi_inplace(apoi, Context(parent=ctx), acc)
+        for a in chain(e.args,(x[1] for x in e.kwargs)):
+            contextualize_poi_inplace(a, Context(parent=ctx), acc)
     else:
         pass
     return acc

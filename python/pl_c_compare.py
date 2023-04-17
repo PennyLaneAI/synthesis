@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 from typing import Any, Dict, Tuple, Union, Callable, Set, List
 from hypothesis import given, note, settings, Verbosity, assume
 from inspect import signature as python_signature, _empty as inspect_empty
@@ -17,7 +18,7 @@ from catalyst_synthesis.grammar import (Expr, RetStmt, FCallExpr, VName, FName, 
                                         Signature, bind, saturate_expr, saturates_expr1,
                                         saturates_poi1, saturate_expr1, saturate_poi1, assignStmt,
                                         assignStmt_, callExpr, WhileLoopExpr, POI, ForLoopExpr,
-                                        callExpr)
+                                        callExpr, gateExpr)
 
 from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprint, pstr,
                                        DEFAULT_CFSTYLE)
@@ -46,6 +47,15 @@ sample_spec3:List[Expr] = [
     CondExpr(trueExpr, POI(), None, CFS.Default),
 ]
 
+sample_spec4:List[Expr] = [
+    callExpr(FName("qml.Hadamard"), [], [('wires',POI())]),
+]
+
+sample_spec5:List[Expr] = [
+    gateExpr('qml.CPhaseShift10', 0, wires=[POI(), POI()]),
+    gateExpr('qml.QubitStateVector', np.array([1.0, 0.0]), wires=[POI()]),
+]
+
 gate_lib = [
     (FName("qml.Hadamard"), Signature(['*'],'*')),
     (FName("qml.X"), Signature(['*'],'*')),
@@ -70,16 +80,16 @@ def run(sample_spec, gate_lib):
     for b in control_flows(sample_spec, gate_lib, [arg]):
         print("1. Builder:")
         pprint(b)
-        print("1. Press Enter to compile")
+        print("1. Press Enter to render")
         input()
         o1,code1 = _render(ControlFlowStyle.Catalyst)
         o2,code2 = _render(ControlFlowStyle.Python)
-        print("2. Compiled code:")
+        print("2. Rendered code:")
         print("^^^ Catalyst version ^^^")
         print(code1)
         print("^^^ PennyLane version ^^^")
         print(code2)
-        print("2. Press Enter to eval")
+        print("2. Press Enter to evaluate and compare")
         input()
         r1 = evalPOI(o1, name="main", args=[(arg,1)])
         r2 = evalPOI(o2, name="main", args=[(arg,1)])
