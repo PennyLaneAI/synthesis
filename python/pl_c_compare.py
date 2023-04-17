@@ -40,6 +40,11 @@ sample_spec2:List[Expr] = [
     # CondExpr(trueExpr, POI(), POI(), CFS.Catalyst) : 1,
 ]
 
+sample_spec3:List[Expr] = [
+    WhileLoopExpr(VName("i1"), lessExpr(addExpr(VName("i1"),POI()),3), POI(), CFS.Default),
+    CondExpr(trueExpr, POI(), None, CFS.Default),
+]
+
 gate_lib = [
     (FName("qml.Hadamard"), Signature(['*'],'*')),
     (FName("qml.X"), Signature(['*'],'*')),
@@ -51,7 +56,7 @@ def bindAssign(poi1:POI, fpoi2:Callable[[Expr],POI]):
 
 
 
-def run(sample_spec=sample_spec1, gate_lib=gate_lib):
+def run(sample_spec, gate_lib):
     arg = VName('arg')
 
     def _render(style):
@@ -85,5 +90,6 @@ def run(sample_spec=sample_spec1, gate_lib=gate_lib):
 
 
 if __name__ == "__main__":
-    run()
+    # run(sample_spec1, gate_lib1)
+    run(sample_spec3, [])
 
