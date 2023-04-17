@@ -16,7 +16,8 @@ from catalyst_synthesis.grammar import (Expr, RetStmt, FCallExpr, VName, FName, 
                                         addExpr, eqExpr, ControlFlowStyle as CFS, signature,
                                         Signature, bind, saturate_expr, saturates_expr1,
                                         saturates_poi1, saturate_expr1, saturate_poi1, assignStmt,
-                                        assignStmt_, callExpr, WhileLoopExpr, POI, ForLoopExpr)
+                                        assignStmt_, callExpr, WhileLoopExpr, POI, ForLoopExpr,
+                                        callExpr)
 
 from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprint, pstr,
                                        DEFAULT_CFSTYLE)
@@ -62,7 +63,7 @@ def run(sample_spec, gate_lib):
     def _render(style):
         return compilePOI(
             bindAssign(b.pois[0].poi,
-                       lambda e: POI([AssignStmt(None,e)],FCallExpr(VRefExpr(FName("qml.state")),[]))),
+                       lambda e: POI([assignStmt_(e)],callExpr(FName("qml.state"),[]))),
             use_qjit=False, name="main", qnode_wires=3, args=[arg],
             default_cfstyle=style)
 

@@ -85,7 +85,8 @@ def _style(s, opt):
     return s
 
 def _isinfix(e:FCallExpr) -> bool:
-    return isinstance(e.expr, VRefExpr) and all(c in "!>=<=+-/*" for c in e.expr.vname.val) and len(e.args)==2
+    return isinstance(e.expr, VRefExpr) and \
+        all(c in "!>=<=+-/*" for c in e.expr.vname.val) and len(e.args)==2 and len(e.kwargs)==0
 
 def _parens(e:POI, expr_str:str, opt) -> str:
     if isinstance(e.expr, (VRefExpr, ConstExpr)) or (isinstance(e.expr, FCallExpr) and not
@@ -97,13 +98,15 @@ def _parens(e:POI, expr_str:str, opt) -> str:
 def pstr_expr(expr:ExprLike,
               state:Optional[PStrState]=None,
               opt:Optional[PStrOptions]=None,
-              arg_expr:Optional[List[POI]]=None) -> Tuple[List[str],str]:
+              arg_expr:Optional[List[POI]]=None,
+              kwarg_expr:Optional[List[Tuple[str,POI]]]=None) -> Tuple[List[str],str]:
     e = bless_expr(expr)
     st = state if state else PStrState(0,Suffix(0))
     if isinstance(e, FCallExpr):
-        return pstr_expr(e.expr, state, opt, arg_expr=e.args)
+        return pstr_expr(e.expr, state, opt, arg_expr=e.args, kwarg_expr=e.kwargs)
     elif isinstance(e, CondExpr):
         assert arg_expr is not None
+        assert len(kwarg_expr)==0
         if _style(e.style, opt) == ControlFlowStyle.Python:
             acc, scond = pstr_expr(e.cond, st, opt)
             st1, svar = st.tabulate().issue("_cond")
@@ -142,6 +145,7 @@ def pstr_expr(expr:ExprLike,
             assert_never(e.style)
     elif isinstance(e, ForLoopExpr):
         assert len(arg_expr)==1
+        assert len(kwarg_expr)==0
         if _style(e.style, opt) == ControlFlowStyle.Python:
             st1 = st.tabulate()
             accArg = pstr_stmt(AssignStmt(e.statevar, arg_expr[0].expr), st, opt) if e.statevar else []
@@ -172,6 +176,7 @@ def pstr_expr(expr:ExprLike,
             assert_never(e.style)
     elif isinstance(e, WhileLoopExpr):
         assert len(arg_expr)==1
+        assert len(kwarg_expr)==0
         if _style(e.style, opt) == ControlFlowStyle.Python:
             accPoi, spoi = pstr_poi(arg_expr[0], st, opt)
             accArg = pstr_stmt(AssignStmt(e.statevar, VRefExpr(VName(spoi))), st, opt)
@@ -205,15 +210,19 @@ def pstr_expr(expr:ExprLike,
         if arg_expr is None:
             return [],e.vname.val
         else:
-            acc_body,args = list(),list()
+            acc_body,args,kwargs = list(),list(),list()
             for ea in arg_expr:
                 lss,le = pstr_poi(ea, state, opt)
                 acc_body.extend(lss)
                 args.append(le)
+            for k,v in kwarg_expr:
+                lss,le = pstr_poi(v, state, opt)
+                acc_body.extend(lss)
+                kwargs.append((k,le))
             return acc_body, (
                 f"{_parens(arg_expr[0], args[0], opt)} {e.vname.val} {_parens(arg_expr[1], args[1], opt)}"
-                if len(arg_expr)==2 and _isinfix(FCallExpr(e, arg_expr)) else
-                f"{e.vname.val}({', '.join(args)})" )
+                if len(arg_expr)==2 and _isinfix(FCallExpr(e, arg_expr, kwarg_expr)) else
+                f"{e.vname.val}({', '.join(args + [(k+'='+v) for k,v in kwargs])})" )
     elif isinstance(e, ConstExpr):
         if isinstance(e.val, bool): # Should be above 'int'
             return [],f"{e.val}"
