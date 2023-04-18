@@ -38,7 +38,7 @@ class POI:
         return cls.fromExpr(*args, **kwargs)
 
 
-POILike = Union[POI, "ExprLike"]
+POILike = Union[POI, "ExprLike", "Stmt"]
 
 
 @dataclass(frozen=True)
@@ -200,6 +200,8 @@ def bless_poi(x:POILike) -> POI:
         return x
     elif isinstance_exprlike(x):
         return POI.fromExpr(bless_expr(x))
+    elif isinstance_stmt(x):
+        return POI([x],None)
     else:
         assert_never(x)
 

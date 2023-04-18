@@ -13,6 +13,7 @@ import jax.numpy as jnp
 import pennylane.numpy as pnp
 from pennylane.numpy import tensor as PnpArray
 import pennylane as qml
+
 try:
     from catalyst import qjit, for_loop, while_loop, cond
     CATALYST_LOADED = True
@@ -20,7 +21,7 @@ except ImportError:
     CATALYST_LOADED = False
 
 from .grammar import (Expr, Stmt, RetStmt, FDefStmt, VName, FName, VRefExpr, isinstance_expr, POI,
-                      ControlFlowStyle)
+                      ControlFlowStyle, POILike, bless_poi, isinstance_stmt)
 from .pprint import pstr_stmt, pstr_expr, pprint, PStrOptions
 from .builder import build
 
@@ -29,23 +30,23 @@ PythonCode = str
 PythonObj = Any
 
 
-def wrapInMain(p:POI, name:Optional[str]=None, args:Optional[List[Expr]]=None, use_qjit:bool=True,
+def wrapInMain(p:POILike, name:Optional[str]=None, args:Optional[List[Expr]]=None, use_qjit:bool=True,
                **kwargs) -> Stmt:
     name = name if name is not None else "main"
     args = args if args is not None else []
-    return FDefStmt(FName(name), args, p, qjit=use_qjit, **kwargs)
+    return FDefStmt(FName(name), args, bless_poi(p), qjit=use_qjit, **kwargs)
 
 
-def compilePOI(p:Union[Stmt,POI],
+def compilePOI(p:POILike,
                name:Optional[str]=None,
                args:Optional[List[Expr]]=None,
                default_cfstyle=ControlFlowStyle.Catalyst,
                **kwargs) -> Tuple[PythonObj, PythonCode]:
     """ Insert the point of insertion into the top-level function and use the Python built-in
     `compile` function on it """
-    p = wrapInMain(p, name, args, **kwargs) if isinstance(p, POI) else p
+    main_stmt = p if isinstance_stmt(p) else wrapInMain(p, name, args, **kwargs)
     opts = PStrOptions(default_cfstyle)
-    code = '\n'.join(pstr_stmt(p, None, opts))
+    code = '\n'.join(pstr_stmt(main_stmt, None, opts))
     o = compile(code, "<compilePOI>", "single")
     return (o, code)
 
