@@ -30,7 +30,7 @@ from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprin
 
 from catalyst_synthesis.builder import build
 from catalyst_synthesis.exec import compilePOI, evalPOI, runPOI, wrapInMain, PythonObj, PythonCode
-from catalyst_synthesis.generator import control_flows
+from catalyst_synthesis.generator import greedy_enumerator
 from catalyst_synthesis.hypothesis import *
 
 
@@ -139,7 +139,7 @@ def batchrun(sample_spec, tag:Optional[str]=None):
         'qnode_device':'lightning.qubit'
     }
     try:
-        for b in control_flows(sample_spec, [arg]):
+        for b in greedy_enumerator(sample_spec, [arg]):
             print('|', end='', flush=True)
             # pprint(b)
             # input()
@@ -187,7 +187,7 @@ def batchrun(sample_spec, tag:Optional[str]=None):
 def manualrun(sample_spec):
     arg = VName('arg')
 
-    for b in control_flows(sample_spec, [arg]):
+    for b in greedy_enumerator(sample_spec, [arg]):
         print("1. Builder:")
         pprint(b)
         print("1. Press Enter to render")

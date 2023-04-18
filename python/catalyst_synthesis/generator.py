@@ -20,8 +20,8 @@ def expanded_to(ls:List[Any], l:int)->List[Optional[Any]]:
     return [(ls[i] if i<len(ls) else None) for i in range(max(len(ls),l))]
 
 
-def control_flows(poi_lib:List[POILike],
-                  free_vars:List[VName]=[]) -> Iterable[Builder]:
+def greedy_enumerator(poi_lib:List[POILike],
+                      free_vars:List[VName]=[]) -> Iterable[Builder]:
     es = [bless_poi(x) for x  in poi_lib]
     ps = sum([nemptypois(p) for p in es], 1)
     vs = sum([get_vars(e.expr) for e in es], free_vars)

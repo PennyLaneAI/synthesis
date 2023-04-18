@@ -26,7 +26,7 @@ from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprin
                                        DEFAULT_CFSTYLE)
 from catalyst_synthesis.builder import build, contextualize_expr, contextualize_poi, Context
 from catalyst_synthesis.exec import compilePOI, evalPOI, runPOI, wrapInMain
-from catalyst_synthesis.generator import control_flows, nemptypois
+from catalyst_synthesis.generator import nemptypois
 from catalyst_synthesis.hypothesis import *
 
 
