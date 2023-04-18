@@ -169,7 +169,7 @@ def runPOI(p:POI,
             [f"AP = ArgumentParser(prog='python3 {basename(source_file_)}')",
              f"AP.add_argument('-o', '--output', type=str, default='_out.npy', metavar='FILE.npy', "
              "help='Output *.npy file')",
-             f"np.save(AP.parse_args(sys.argv[1:]).output, main({','.join(arg_prints)}))" ])
+             f"np.save(AP.parse_args(sys.argv[1:]).output, {name}({','.join(arg_prints)}))" ])
 
         with open(source_file_, "w") as s:
             s.write('\n'.join(header + code + footer))

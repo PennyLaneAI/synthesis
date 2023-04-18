@@ -24,16 +24,13 @@ def control_flows(poi_lib:List[POILike],
                   free_vars:List[VName]=[]) -> Iterable[Builder]:
     es = [bless_poi(x) for x  in poi_lib]
     ps = sum([nemptypois(p) for p in es], 1)
-    print('ps',ps)
     vs = sum([get_vars(e.expr) for e in es], free_vars)
     for e_sample in permutations(range(len(es))):
         for p_sample in permutations(range(ps)):
-            # print(p_sample)
             for v_sample in product(*([vs]*len(p_sample))):
                 b = build(POI(), free_vars)
                 try:
                     e_sample_ext = expanded_to(e_sample,len(v_sample))
-                    # print(e_sample_ext)
                     for (p,e,v) in zip(p_sample, e_sample_ext, v_sample):
                         pwc = b.at(p)
                         ctx, poi = pwc.ctx, pwc.poi
@@ -45,7 +42,6 @@ def control_flows(poi_lib:List[POILike],
                     yield b
                 except IndexError as err:
                     pass
-                    # print(err)
                 except ValueError as err:
                     print(err)
 
