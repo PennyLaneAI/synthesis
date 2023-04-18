@@ -211,7 +211,7 @@ def manualrun(sample_spec):
 
 
 if __name__ == "__main__":
-    # manualrun(sample_spec1, gate_lib1)
+    # manualrun(sample_spec1)
     # manualrun(sample_spec1)
 
     batchrun(sample_spec1, 'spec1')
