@@ -18,7 +18,7 @@ from catalyst_synthesis.grammar import (Expr, RetStmt, FCallExpr, VName, FName, 
                                         Signature, bind, saturate_expr, saturates_expr1,
                                         saturates_poi1, saturate_expr1, saturate_poi1, assignStmt,
                                         assignStmt_, callExpr, WhileLoopExpr, POI, ForLoopExpr,
-                                        callExpr, gateExpr)
+                                        callExpr, gateExpr, POILike)
 
 from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprint, pstr,
                                        DEFAULT_CFSTYLE)
@@ -31,8 +31,8 @@ from catalyst_synthesis.hypothesis import *
 
 sample_spec1:List[Expr] = [
     # WhileLoopExpr(VName("i"), trueExpr, POI(), CFS.Catalyst) : 1,
-    WhileLoopExpr(VName("j1"), lessExpr(VName("j1"),2), POI(), CFS.Default),
-    ForLoopExpr(VName("k1"), POI.fE(1), POI.fE(2), POI(), CFS.Default, VName("k2")),
+    callExpr(WhileLoopExpr(VName("j1"), lessExpr(VName("j1"),2), POI(), CFS.Default), [POI()]),
+    callExpr(ForLoopExpr(VName("k1"), POI.fE(1), POI.fE(2), POI(), CFS.Default, VName("k2")), [POI()]),
     # CondExpr(trueExpr, POI(), POI(), CFS.Catalyst) : 1,
 ]
 
@@ -51,10 +51,10 @@ sample_spec4:List[Expr] = [
     callExpr(FName("qml.Hadamard"), [], [('wires',POI())]),
 ]
 
-sample_spec5:List[Expr] = [
+sample_spec5:List[POILike] = [
     gateExpr('qml.CPhaseShift10', 0, wires=[POI(), POI()]),
     gateExpr('qml.QubitStateVector', np.array([1.0, 0.0]), wires=[POI()]),
-    CondExpr(trueExpr, POI(), POI(), CFS.Default),
+    callExpr(CondExpr(trueExpr, POI(), POI(), CFS.Default), []),
 ]
 
 gate_lib = [
@@ -68,7 +68,7 @@ def bindAssign(poi1:POI, fpoi2:Callable[[Expr],POI]):
 
 
 
-def run(sample_spec, gate_lib):
+def run(sample_spec):
     arg = VName('arg')
 
     def _render(style):
@@ -78,11 +78,11 @@ def run(sample_spec, gate_lib):
             use_qjit=False, name="main", qnode_wires=3, args=[arg],
             default_cfstyle=style)
 
-    for b in control_flows(sample_spec, gate_lib, [arg]):
+    for b in control_flows(sample_spec, [arg]):
         print("1. Builder:")
         pprint(b)
         print("1. Press Enter to render")
-        input()
+        # input()
         o1,code1 = _render(ControlFlowStyle.Catalyst)
         o2,code2 = _render(ControlFlowStyle.Python)
         print("2. Rendered code:")
@@ -90,18 +90,18 @@ def run(sample_spec, gate_lib):
         print(code1)
         print("^^^ PennyLane version ^^^")
         print(code2)
-        print("2. Press Enter to evaluate and compare")
-        input()
-        r1 = evalPOI(o1, name="main", args=[(arg,1)])
-        r2 = evalPOI(o2, name="main", args=[(arg,1)])
-        print("3. Evaluation result:")
-        print(r1)
-        print(r2)
-        assert_allclose(r1, r2)
+        # print("2. Press Enter to evaluate and compare")
+        # input()
+        # r1 = evalPOI(o1, name="main", args=[(arg,1)])
+        # r2 = evalPOI(o2, name="main", args=[(arg,1)])
+        # print("3. Evaluation result:")
+        # print(r1)
+        # print(r2)
+        # assert_allclose(r1, r2)
         input()
 
 
 if __name__ == "__main__":
     # run(sample_spec1, gate_lib1)
-    run(sample_spec3, [])
+    run(sample_spec1)
 

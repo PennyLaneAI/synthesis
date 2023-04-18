@@ -8,7 +8,8 @@ from .grammar import (VName, FName, Expr, Stmt, VRefExpr, AssignStmt, CondExpr,
                       WhileLoopExpr, FDefStmt, Program, RetStmt, ConstExpr, POI, ForLoopExpr,
                       WhileLoopExpr, trueExpr, falseExpr, ControlFlowStyle as CFS, assert_never,
                       NoneExpr, saturate_expr1, addExpr, lessExpr, Signature,
-                      AssignStmt, signature, get_vars, assignStmt, assignStmt_, callExpr, bind)
+                      AssignStmt, signature, get_vars, assignStmt, assignStmt_, callExpr, bind,
+                      POILike, bless_poi)
 
 from .builder import Builder, contextualize_expr, build
 from .pprint import pprint, pstr
@@ -36,41 +37,44 @@ def expanded_to(ls:List[Any], l:int)->List[Optional[Any]]:
 #     return bind(a, b, e)
 
 
-def control_flows(expr_lib:List[Expr],
-                  gate_lib:List[Tuple[FName,Signature]],
+def control_flows(poi_lib:List[POILike],
+                  # gate_lib:List[Tuple[FName,Signature]],
                   free_vars:List[VName]=[]) -> Iterable[Builder]:
-    gs = gate_lib if gate_lib else [None]
-    es = expr_lib
-    ps = sum([nemptypois(e) for e in expr_lib], 1)
-    vs = sum([get_vars(e) for e in expr_lib], free_vars)
-    nargs = max(chain([0],(len(s.args) for _,s in gate_lib))) + \
-            max(len(signature(e).args if signature(e).args else []) for e in expr_lib)
-    for e_sample in permutations(es):
+    # gs = gate_lib if gate_lib else [None]
+    es = [bless_poi(x) for x  in poi_lib]
+    ps = sum([nemptypois(e.expr) for e in es], 1)
+    vs = sum([get_vars(e.expr) for e in es], free_vars)
+    # nargs = max(len(signature(e).args if signature(e).args else []) for e in expr_lib)
+    for e_sample in permutations(range(len(es))):
         for p_sample in permutations(range(ps)):
         # for p_sample in product(*([range(ps)]*ps)):
             print(p_sample)
-            for g_sample in product(*[gs]*len(p_sample)):
-                args = list(product(*([vs]*max(2,nargs))))
-                for v_sample in product(*([args]*len(p_sample))):
-                    b = build(POI(), free_vars)
-                    try:
-                        e_sample_ext = expanded_to(e_sample,len(v_sample))
-                        for p,g,e,v in zip(p_sample,
-                                           g_sample,
-                                           e_sample_ext,
-                                           v_sample):
-                            pwc = b.at(p)
-                            ctx, poi = pwc.ctx, pwc.poi
-                            assert len(v) >= 2, f"len({v}) < 2"
-                            if not all(vi in ctx.get_vscope() for vi in v):
-                                raise IndexError(f"{v} not in scope: {ctx.get_vscope()}")
-                            stmts = [assignStmt_(callExpr(g[0], [v[0]]))] if g else []
-                            res = saturate_expr1(e if e else v[1], v[1])
-                            expr = addExpr(ctx.statevar, res) if ctx.statevar else res
-                            b.update(p, POI(stmts, expr), ignore_nonempty=True)
-                        yield b
-                    except IndexError as err:
-                        pass
-                    except ValueError as err:
-                        print(err)
+            for v_sample in product(*([vs]*len(p_sample))):
+                # print(v_sample)
+                b = build(POI(), free_vars)
+                try:
+                    e_sample_ext = expanded_to(e_sample,len(v_sample))
+                    print(e_sample_ext)
+                    for (p,
+                         # g,
+                         e,
+                         v) in zip(p_sample,
+                                       # g_sample,
+                                       e_sample_ext,
+                                       v_sample):
+                        pwc = b.at(p)
+                        ctx, poi = pwc.ctx, pwc.poi
+                        # assert len(v) >= 2, f"len({v}) < 2"
+                        if v not in ctx.get_vscope():
+                            raise IndexError(f"{v} not in scope: {ctx.get_vscope()}")
+                        # stmts = [assignStmt_(callExpr(g[0], [v[0]]))] if g else []
+                        # e2 = saturate_expr1(e.expr if e and e.expr else v[1], v[1])
+                        e1 = deepcopy(es[e] if e is not None else bless_poi(v))
+                        e2 = bless_poi(addExpr(ctx.statevar, e1)) if ctx.statevar else e1
+                        b.update(p, e2, ignore_nonempty=True)
+                    yield b
+                except IndexError as err:
+                    print(err)
+                except ValueError as err:
+                    print(err)
 
