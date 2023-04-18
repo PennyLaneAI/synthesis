@@ -29,8 +29,9 @@ from catalyst_synthesis.generator import control_flows
 from catalyst_synthesis.hypothesis import *
 
 
-sample_spec1:List[Expr] = [
+sample_spec1:List[POILike] = [
     # WhileLoopExpr(VName("i"), trueExpr, POI(), CFS.Catalyst) : 1,
+    POI([assignStmt_(gateExpr('qml.Hadamard', wires=[POI()]))], ConstExpr(1)),
     callExpr(WhileLoopExpr(VName("j1"), lessExpr(VName("j1"),2), POI(), CFS.Default), [POI()]),
     callExpr(ForLoopExpr(VName("k1"), POI.fE(1), POI.fE(2), POI(), CFS.Default, VName("k2")), [POI()]),
     # CondExpr(trueExpr, POI(), POI(), CFS.Catalyst) : 1,
@@ -57,10 +58,10 @@ sample_spec5:List[POILike] = [
     callExpr(CondExpr(trueExpr, POI(), POI(), CFS.Default), []),
 ]
 
-gate_lib = [
-    (FName("qml.Hadamard"), Signature(['*'],'*')),
-    (FName("qml.X"), Signature(['*'],'*')),
-]
+# gate_lib = [
+#     (FName("qml.Hadamard"), Signature(['*'],'*')),
+#     (FName("qml.X"), Signature(['*'],'*')),
+# ]
 
 def bindAssign(poi1:POI, fpoi2:Callable[[Expr],POI]):
     poi2 = fpoi2(poi1.expr)

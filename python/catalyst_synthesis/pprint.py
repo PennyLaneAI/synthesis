@@ -8,7 +8,7 @@ from itertools import chain
 
 from dataclasses import dataclass
 
-from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt,
+from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt, assignStmt,
                       CondExpr, WhileLoopExpr, FDefStmt, Program, RetStmt,
                       ConstExpr, NoneExpr, POI, ForLoopExpr, ControlFlowStyle,
                       assert_never, isinstance_expr, isinstance_stmt, ExprLike, bless_expr,
@@ -92,7 +92,8 @@ def pstr_expr(expr:ExprLike,
     """ Renders an expression-like value to a code. Returns a tuple of zero or more Python statement
     strings and a Python expression string.
 
-    FIXME: Get rid of `arg_expr` / `kwarg_expr` -style recursive message-passing. """
+    FIXME: Get rid of `arg_expr` / `kwarg_expr` -style recursive message-passing.
+    FIXME: Simpligy controlflow POIs rendering by making AssignStmt/ReturnStmt recursive calls """
     e = bless_expr(expr)
     st = state if state else PStrState(0,Suffix(0))
     if isinstance(e, FCallExpr):
@@ -107,14 +108,14 @@ def pstr_expr(expr:ExprLike,
                 _in(st, [f"if {scond}:"]) +
                 _ne(st,
                     sum([pstr_stmt(s, st1, opt) for s in e.trueBranch.stmts], []) +
-                    (pstr_stmt(AssignStmt(VName(svar), e.trueBranch.expr), st1, opt) if
+                    (pstr_stmt(assignStmt(VName(svar), e.trueBranch), st1, opt) if
                      e.trueBranch.expr else [])) +
                 _hi(st1, opt, e.trueBranch))
             false_part = (
                 _in(st, ["else:"]) +
                 _ne(st,
                     sum([pstr_stmt(s, st1, opt) for s in e.falseBranch.stmts], []) +
-                    (pstr_stmt(AssignStmt(VName(svar), e.falseBranch.expr), st1, opt) if
+                    (pstr_stmt(assignStmt(VName(svar), e.falseBranch.expr), st1, opt) if
                      e.falseBranch.expr else [])) +
                 _hi(st1, opt, e.falseBranch)) if e.falseBranch else []
             return (acc + true_part + false_part, svar)
@@ -141,19 +142,19 @@ def pstr_expr(expr:ExprLike,
         assert len(kwarg_expr)==0
         if _style(e.style, opt) == ControlFlowStyle.Python:
             st1 = st.tabulate()
-            accArg = pstr_stmt(AssignStmt(e.statevar, arg_expr[0].expr), st, opt) if e.statevar else []
+            accArg = pstr_stmt(assignStmt(e.statevar, arg_expr[0]), st, opt) if e.statevar else []
             accL, lexprL = pstr_poi(e.lbound, st, opt)
             accU, lexprU = pstr_poi(e.ubound, st, opt)
             return (
                 accArg + accL + accU +
                 _in(st, [f"for {e.loopvar.val} in range({lexprL},{lexprU}):"]) +
                 _ne(st, sum([pstr_stmt(s, st1, opt) for s in e.body.stmts], []) +
-                        (pstr_stmt(AssignStmt(e.statevar,e.body.expr), st1, opt)
+                        (pstr_stmt(assignStmt(e.statevar,e.body.expr), st1, opt)
                          if e.body.expr and e.statevar else [])) +
                 _hi(st1, opt, e.body), (e.statevar.val if e.statevar else "None"))
 
         elif _style(e.style, opt) == ControlFlowStyle.Catalyst:
-            accArg, sarg = pstr_expr(arg_expr[0].expr, st, opt)
+            accArg, sarg = pstr_poi(arg_expr[0], st, opt)
             accL, lexprL = pstr_poi(e.lbound, st, opt)
             accU, lexprU = pstr_poi(e.ubound, st, opt)
             st1, nforloop = st.tabulate().issue("forloop")
@@ -172,7 +173,7 @@ def pstr_expr(expr:ExprLike,
         assert len(kwarg_expr)==0
         if _style(e.style, opt) == ControlFlowStyle.Python:
             accPoi, spoi = pstr_poi(arg_expr[0], st, opt)
-            accArg = pstr_stmt(AssignStmt(e.statevar, VRefExpr(VName(spoi))), st, opt)
+            accArg = pstr_stmt(assignStmt(e.statevar, VRefExpr(VName(spoi))), st, opt)
             accCond, lexpr = pstr_expr(e.cond, st, opt)
             st1, svar = st.tabulate().issue("_whileloop")
             return (
@@ -181,7 +182,7 @@ def pstr_expr(expr:ExprLike,
                 accCond +
                 _in(st, [f"while {lexpr}:"]) +
                 _ne(st, sum([pstr_stmt(s, st1, opt) for s in e.body.stmts], []) +
-                        (pstr_stmt(AssignStmt(e.statevar, e.body.expr), st1, opt) if e.body.expr else [])) +
+                        (pstr_stmt(assignStmt(e.statevar, e.body.expr), st1, opt) if e.body.expr else [])) +
                 _hi(st1, opt, e.body),
                 e.statevar.val)
         elif _style(e.style, opt) == ControlFlowStyle.Catalyst:
@@ -243,7 +244,7 @@ def pstr_stmt(s:Stmt,
     """ Pretty-print a statement `s` into a lines of Python code """
     st:PStrState = state if state is not None else PStrState(0,Suffix(0))
     if isinstance(s, AssignStmt):
-        acc, lexpr = pstr_expr(s.expr, st, opt)
+        acc, lexpr = pstr_poi(s.poi, st, opt)
         return acc + _in(st, [f"{s.vname.val if s.vname else '_'} = {lexpr}"])
     elif isinstance(s, FDefStmt):
         st1 = st.tabulate()

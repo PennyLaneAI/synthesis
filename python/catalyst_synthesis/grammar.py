@@ -148,17 +148,17 @@ def isinstance_stmt(s:Any) -> bool:
 class AssignStmt:
     """ Statement - variable assignemnt or a function call """
     vname: Optional[VName]
-    expr: Expr
+    poi: POI
 
-    @classmethod
-    def fE(cls, e:Expr) -> "AssignStmt":
-        return AssignStmt(None, e)
+    # @classmethod
+    # def fE(cls, e:Expr) -> "AssignStmt":
+    #     return AssignStmt(None, e)
 
-def assignStmt(v, e):
-    return AssignStmt(v, bless_expr(e))
+def assignStmt(v, p):
+    return AssignStmt(v, bless_poi(p))
 
-def assignStmt_(e):
-    return assignStmt(None, e)
+def assignStmt_(p):
+    return assignStmt(None, p)
 
 @dataclass(frozen=True)
 class FDefStmt:
@@ -267,7 +267,7 @@ def reduce_stmt_expr(e:Union[Stmt,Expr], f:Callable[[Union[Stmt,Expr],Acc],Acc],
     elif isinstance(e, (NoneExpr, VRefExpr, ConstExpr)):
         return _down([])
     elif isinstance(e, AssignStmt):
-        return _down([e.expr])
+        return _down(_unpoi(e.poi))
     elif isinstance(e, RetStmt):
         return _down([e.expr])
     elif isinstance(e, FDefStmt):
@@ -377,8 +377,8 @@ def bracketExpr(args) -> FCallExpr:
     return callExpr(FName('[]'), args)
 
 def gateExpr(name:str, *args,
-             wires:List[ExprLike],
-             control_wires:Optional[List[ExprLike]]=None,
+             wires:List[POILike],
+             control_wires:Optional[List[POILike]]=None,
              **kwargs) -> FCallExpr:
     return callExpr(name, args=args, kwargs=(
         [('wires', bracketExpr(wires))] +

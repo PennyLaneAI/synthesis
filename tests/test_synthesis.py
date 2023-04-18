@@ -24,7 +24,7 @@ from catalyst_synthesis.grammar import (Expr, RetStmt, FCallExpr, VName, FName, 
 
 from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprint, pstr,
                                        DEFAULT_CFSTYLE)
-from catalyst_synthesis.builder import build, contextualize_expr
+from catalyst_synthesis.builder import build, contextualize_expr, contextualize_poi, Context
 from catalyst_synthesis.exec import compilePOI, evalPOI, runPOI, wrapInMain
 from catalyst_synthesis.generator import control_flows, nemptypois
 from catalyst_synthesis.hypothesis import *
@@ -237,7 +237,18 @@ def test_build_fcall():
 def test_build_finds_pois(e):
     assert len(contextualize_expr(e())) == len(get_pois(e()))
 
+def test_assign_finds_pois():
+    poi = POI([assignStmt_(gateExpr('Somegate', wires=[POI(),POI(),POI()]))],ConstExpr(0))
+    pwcs,_ = contextualize_poi(poi, Context())
+    assert 3 == len([p for p in pwcs if p.poi.isempty()])
 
+def test_build_assigns():
+    poi = POI([assignStmt_(gateExpr('Somegate', wires=[POI(),POI(),POI()]))],ConstExpr(0))
+    b = build(POI())
+    b.update(0, poi, ignore_nonempty=True)
+    assert len(b.pois)==4
+    b.update(2, POI.fE(ConstExpr(0)))
+    pprint(b)
 
 @mark.parametrize('qnode_device', [None, "lightning.qubit"])
 @mark.parametrize('use_qjit', [True, False])

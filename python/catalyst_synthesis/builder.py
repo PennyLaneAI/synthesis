@@ -86,7 +86,7 @@ class Builder:
                 print(f"Removing {i}")
                 assert not assert_no_delete, f"But we do delete {i} when updating {n}!"
                 del self.pois[i]
-        pwcs,_ = _contextualize_poi(poi, poic.ctx)
+        pwcs,_ = contextualize_poi(poi, poic.ctx)
         for pwc in pwcs:
             assert is_parent_of(poic.ctx, pwc.ctx)
             # assert pwc in self.pois
@@ -95,14 +95,6 @@ class Builder:
         poic.poi.stmts = poi.stmts
         poic.poi.expr = poi.expr
         return pwcs2
-
-
-def pois_scan_inplace(ss:List[Stmt], ctx:Context, acc:List[PWC]) -> Context:
-    for s in ss:
-        if isinstance(s, AssignStmt) and s.vname is not None:
-            ctx = Context([s.vname], statevar=ctx.statevar, parent=ctx)
-        acc.extend(contextualize_stmt(s, ctx))
-    return ctx
 
 
 def contextualize_expr(e:Expr, ctx:Optional[Context]=None) -> List[PWC]:
@@ -133,31 +125,38 @@ def contextualize_stmt(s:Stmt, ctx:Optional[Context]=None) -> List[PWC]:
     """ Recursively collect insertion points contexts across the statement. """
     acc:List[PWC] = list()
     if isinstance(s, AssignStmt):
-        acc.extend(contextualize_expr(s.expr, ctx))
+        contextualize_poi_inplace(s.poi, Context(parent=ctx), acc)
     elif isinstance(s, RetStmt):
         if s.expr is not None:
             acc.extend(contextualize_expr(s.expr, ctx))
     elif isinstance(s, FDefStmt):
-        contextualize_poi_inplace(s.body, Context(s.args,parent=ctx), acc)
+        contextualize_poi_inplace(s.body, Context(s.args, parent=ctx), acc)
     else:
         assert_never(s)
 
     return acc
 
-def _contextualize_poi(poi:POI, ctx:Context) -> Tuple[List[PWC],Context]:
+def _pois_scan_inplace(ss:List[Stmt], ctx:Context, acc:List[PWC]) -> Context:
+    for s in ss:
+        if isinstance(s, AssignStmt) and s.vname is not None:
+            ctx = Context([s.vname], statevar=ctx.statevar, parent=ctx)
+        acc.extend(contextualize_stmt(s, ctx))
+    return ctx
+
+def contextualize_poi(poi:POI, ctx:Context) -> Tuple[List[PWC],Context]:
     pwc1 = list()
-    ctx = pois_scan_inplace(poi.stmts, ctx, pwc1)
+    ctx = _pois_scan_inplace(poi.stmts, ctx, pwc1)
     pwc2 = contextualize_expr(poi.expr, ctx) if poi.expr else []
     return (pwc1 + pwc2, ctx)
 
 def contextualize_poi_inplace(poi:POI, ctx:Context, acc:List[PWC]) -> Context:
-    pwcs,ctx2 = _contextualize_poi(poi, ctx)
+    pwcs,ctx2 = contextualize_poi(poi, ctx)
     acc.extend([POIWithContext(poi, ctx2)] + pwcs)
     return ctx
 
 def build(poi:POI, vscope:Optional[List[VName]]=None) -> Builder:
     ctx = Context(vscope)
-    pwcs,ctx = _contextualize_poi(poi, ctx)
+    pwcs,ctx = contextualize_poi(poi, ctx)
     return Builder([POIWithContext(poi,ctx)] + pwcs)
 
 
