@@ -111,15 +111,17 @@ Notes:
 | Construction helpers (lower-case)    | `bless_*`, `fdefStmt`, `callExpr`, `forLoopExpr`, `whileLoopExpr`, `condExpr`, ... |
 | Recursive AST querying      | `reduce_stmt_expr`,  `get_pois`, `get_vars`, ... |
 | Immutable AST manipulations | `saturate_expr` , `saturate_poi` |
-| Mutable AST manipulations   | `build` |
+| Mutable AST manipulations   | `Build`, `build` |
 | Pretty-printing             | `pprint`, `pstr`, `pstr_expr`, `pstr_stmt`, `pstr_poi`, ... |
 
 
 ### Enumerating programs
 
-The expression builder allows us to define a combinatorial algorithm iterating over programs in a
-specified domain. The algorithm accepts a specification of AST parts to combine and yields possible
-programs combining all parts together in a number of possible ways. The algorithm goes as following:
+The mutable AST manipulation utilities, namely, the expression builder class `Build`, allow to
+define combinatorial algorithms iterating over programs in a specified domain. The specification
+lists AST parts to combine and the algorithm yields resulting programs.
+
+Below is the workflow used by the `greedy_enumerator` algorithm we provide in this library.
 
 1. The list of AST parts to combine is taken as input.
 2. The total number of POIs mentioned in the specification is calculated.
@@ -127,9 +129,10 @@ programs combining all parts together in a number of possible ways. The algorith
 4. The extended list of parts is set to be the input specification extended by `None` placeholders
    which instruct the algorithm to use a bound variable.
 4. Now, repeatedly:
-   1. The program building instruction is a list of triples `(p,e,v)` where `p` is the Position to pass
-      to `Builder.update` method, the `e` is the member of list of extended parts to put into this
-      position, and `v` is the variable to use if `e` is a placeholder of if it requires an argument.
+   1. The program creation instruction is defined as a list of triples `(p,e,v)` where `p` is the
+      Position to pass to `Builder.update` method, the `e` is the member of list of extended parts
+      to put into this position, and `v` is the variable to use if `e` is a placeholder or if it
+      requires an argument.
    2. An instruction instance is obtained as a result of permuting all possible candidates for `p`,
       `e` and `v`.
    3. The program instance is being built according to the instruction.
