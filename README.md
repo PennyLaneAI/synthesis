@@ -156,14 +156,14 @@ AST elements could be created and nested, but they doesn't look readable in thei
 representation.
 
 ``` python
-c = callExpr(condExpr(lessExpr("i",0), POI(), POI()), [])
+c = callExpr(condExpr(lessExpr(VName("i"),0), POI(), POI()), [])
 l = callExpr(forLoopExpr("i", "state", 0, 10, c), [3])
 f = fdefStmt("foo", ["arg"], l, qnode_device="our.device", qnode_wires=4)
 print(f)
 ```
 
 ``` result
-FDefStmt(fname=FName(val='foo'), args=[VName(val='arg')], body=POI(stmts=[], expr=FCallExpr(expr=ForLoopExpr(loopvar=VName(val='i'), lbound=POI(stmts=[], expr=ConstExpr(val=0)), ubound=POI(stmts=[], expr=ConstExpr(val=10)), body=POI(stmts=[], expr=FCallExpr(expr=CondExpr(cond=FCallExpr(expr=VRefExpr(vname=FName(val='<')), args=[POI(stmts=[], expr=ConstExpr(val='i')), POI(stmts=[], expr=ConstExpr(val=0))], kwargs=[]), trueBranch=POI(stmts=[], expr=None), falseBranch=POI(stmts=[], expr=None), style=<ControlFlowStyle.Default: 0>), args=[], kwargs=[])), style=<ControlFlowStyle.Default: 0>, statevar=VName(val='state')), args=[POI(stmts=[], expr=ConstExpr(val=3))], kwargs=[])), qnode_wires=4, qnode_device='our.device', qjit=False)
+FDefStmt(fname=FName(val='foo'), args=[VName(val='arg')], body=POI(stmts=[], expr=FCallExpr(expr=ForLoopExpr(loopvar=VName(val='i'), lbound=POI(stmts=[], expr=ConstExpr(val=0)), ubound=POI(stmts=[], expr=ConstExpr(val=10)), body=POI(stmts=[], expr=FCallExpr(expr=CondExpr(cond=FCallExpr(expr=VRefExpr(vname=FName(val='<')), args=[POI(stmts=[], expr=VRefExpr(vname=VName(val='i'))), POI(stmts=[], expr=ConstExpr(val=0))], kwargs=[]), trueBranch=POI(stmts=[], expr=None), falseBranch=POI(stmts=[], expr=None), style=<ControlFlowStyle.Default: 0>), args=[], kwargs=[])), style=<ControlFlowStyle.Default: 0>, statevar=VName(val='state')), args=[POI(stmts=[], expr=ConstExpr(val=3))], kwargs=[])), qnode_wires=4, qnode_device='our.device', qjit=False)
 ```
 
 `pstr_*` functions prints AST in a human-readable form. One can specify either a PennyLane or a
@@ -178,7 +178,7 @@ print(pstr(f, default_cfstyle=ControlFlowStyle.Python))
 def foo(arg):
     state = 3
     for i in range(0, 10):
-        if "i" < 0:
+        if i < 0:
             _cond0 = None
         else:
             _cond0 = None
@@ -195,7 +195,7 @@ print(pstr(f, default_cfstyle=ControlFlowStyle.Catalyst))
 def foo(arg):
     @for_loop(0, 10, 1)
     def forloop0(i,state):
-        @cond("i" < 0)
+        @cond(i < 0)
         def cond1():
             pass
         @cond1.otherwise
@@ -230,9 +230,7 @@ def foo(arg):
     def forloop0(i,state):
         @cond("i" < 0)
         def cond1():
-            pass
-            # poi-id: 139806092521488
-            # poi-var: arg, i, state
+            return qml.Hadamard(wires=[2])
         @cond1.otherwise
         def cond1():
             pass
@@ -240,7 +238,7 @@ def foo(arg):
             # poi-var: arg, i, state
         return cond1()
     return forloop0(3)
-# poi-id: 139806092522880
+# poi-id: 139806092521104
 # poi-var:
 ## None ##
 ```
