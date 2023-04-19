@@ -19,7 +19,7 @@ We do not provide any packaging at the moment. To use the library one typically 
 
 3. Adjust the `PYTHONPATH` to point to the `./python/catalyst_synthesis` folder.
    ``` sh
-   export PYTHONPATH="$(cwd)/python/catalyst_synthesis:$PYTHONPATH"
+   export PYTHONPATH="$(pwd)/python/catalyst_synthesis:$PYTHONPATH"
    ```
 
 4. Optionally, call `pytest` to run the tests. Note, running tests in multi-processing mode with `-n
