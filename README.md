@@ -142,9 +142,8 @@ print(f)
 FDefStmt(fname=FName(val='foo'), args=[VName(val='arg')], body=POI(stmts=[], expr=FCallExpr(expr=ForLoopExpr(loopvar=VName(val='i'), lbound=POI(stmts=[], expr=ConstExpr(val=0)), ubound=POI(stmts=[], expr=ConstExpr(val=10)), body=POI(stmts=[], expr=FCallExpr(expr=CondExpr(cond=FCallExpr(expr=VRefExpr(vname=FName(val='<')), args=[POI(stmts=[], expr=ConstExpr(val='i')), POI(stmts=[], expr=ConstExpr(val=0))], kwargs=[]), trueBranch=POI(stmts=[], expr=None), falseBranch=POI(stmts=[], expr=None), style=<ControlFlowStyle.Default: 0>), args=[], kwargs=[])), style=<ControlFlowStyle.Default: 0>, statevar=VName(val='state')), args=[POI(stmts=[], expr=ConstExpr(val=3))], kwargs=[])), qnode_wires=4, qnode_device='our.device', qjit=False)
 ```
 
-`pstr_*` functions prints AST in a human-readbale form. We may specify either a PennyLane or a
-Catalyst style of Python to use. The last line of the output specifies an expression available for
-use in the subsequent parts of the program.
+`pstr_*` functions prints AST in a human-readable form. One can specify either a PennyLane or a
+Catalyst style of Python to use.
 
 ``` python
 print(pstr(f, default_cfstyle=ControlFlowStyle.Python))
@@ -186,14 +185,14 @@ def foo(arg):
 
 Creating AST from the leaves back to the top is not always convenient. A top-down approach would
 follow the operational semantic of the program which may simplify resource tracking.  Unfortunately,
-this approach typically requires modification of existing parts of the tree. We provide `build`
-class which does the necessary bookkeeping.
+this approach typically requires modification of existing parts of the tree which may be harder to
+work with. We provide `build` class which does the necessary bookkeeping.
 
 Below we load the already existing part of the tree into a builder. The builder notes free `POIs`
-and collects some context information for all of them. Currently, contexts include names of visible
-variables.
+and collects a context information. Currently, contexts include names of visible variables and some
+additional information of loop variables that are important for avoiding infinite loops.
 
-Resulting expression builder is a pretty-printable object.
+The expression builder is a pretty-printable object.
 
 ``` python
 b = build(POI([f]))
