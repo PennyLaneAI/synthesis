@@ -265,18 +265,18 @@ programs combining all parts together in a number of possible ways. The algorith
 4. The extended list of parts is set to be the input specification extended by `None` placeholders
    which instruct the algorithm to use a bound variable.
 4. Now, repeatedly:
-  1. The program building instruction is a list of triples `(p,e,v)` where `p` is the Position to pass
-     to `Builder.update` method, the `e` is the member of list of extended parts to put into this
-     position, and `v` is the variable to use if `e` is a placeholder of if it requires an argument.
-  2. An instruction instance is obtained as a result of permuting all possible candidates for `p`,
-     `e` and `v`.
-  3. The program instance is being built according to the instruction.
-     - At this point, some of the programs may violate the rules of Python by mentioning variables
-       before they are defined. We use builder's `Context` to detect such issues and skip these
-       programs.
-     - Also the programs may violate typing rules, e.g. passing gate as `wire` argument to another
-       gate. The typechecker would be useful to detect such cases, but right now we don't have one,
-       so we output these programs and compare the results of execution on different backends.
+   1. The program building instruction is a list of triples `(p,e,v)` where `p` is the Position to pass
+      to `Builder.update` method, the `e` is the member of list of extended parts to put into this
+      position, and `v` is the variable to use if `e` is a placeholder of if it requires an argument.
+   2. An instruction instance is obtained as a result of permuting all possible candidates for `p`,
+      `e` and `v`.
+   3. The program instance is being built according to the instruction.
+      - At this point, some of the programs may violate the rules of Python by mentioning variables
+        before they are defined. We use builder's `Context` to detect such issues and skip these
+        programs.
+      - Also the programs may violate typing rules, e.g. passing gate as `wire` argument to another
+        gate. The typechecker would be useful to detect such cases, but right now we don't have one,
+        so we output these programs and compare the results of execution on different backends.
 
 
 Consider the following example:
