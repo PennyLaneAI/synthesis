@@ -376,10 +376,10 @@ $ python3 ./python/pl_c_compare.py
 |...|...|__.|...|...|__.|__.|__.|__.|...|...|__.|...|...|__.|__.|__.|__.|__.|__.|__.|__.|__.
 ```
 
-Where symbol in `|...` means: `|` - the program text was generated, `..` - The PennyLane and
-Catalyst versions of the program were executed and the last `.` - numeric comparison test was
-passed. `_` means that the result for this program was already present on disk in the `_synthesis`
-folder.
+Where the meaning of `|...` symbols is as follows: `|` - the program text was generated, `..` - The
+PennyLane and Catalyst versions of the program were executed and the last `.` - numeric comparison
+test was passed. `_` means that the result for this program was already present on disk in the
+`_synthesis` folder.
 
 Known issues and limitations
 ----------------------------
