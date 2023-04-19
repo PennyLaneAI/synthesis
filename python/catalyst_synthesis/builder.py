@@ -5,8 +5,8 @@ from itertools import chain
 
 from .grammar import (VName, FName, Expr, Stmt, FCallExpr, VRefExpr, AssignStmt,
                       CondExpr, WhileLoopExpr, FDefStmt, Program, RetStmt,
-                      ConstExpr, POI, ForLoopExpr,
-                      ControlFlowStyle as CFS, assert_never)
+                      ConstExpr, POI, POILike, ForLoopExpr,
+                      ControlFlowStyle as CFS, assert_never, bless_poi)
 
 import numpy as np
 from numpy import floor
@@ -77,13 +77,14 @@ class Builder:
     def vscope_at(self, n:PRef) -> List[VName]:
         return self.at(n).ctx.get_vscope()
 
-    def update(self, n:PRef, poi:POI, ignore_nonempty=True, assert_no_delete=False) -> List[PWC]:
+    def update(self, n:PRef, poi:POILike, ignore_nonempty=True, assert_no_delete=False) -> List[PWC]:
         """ Add a new statement at the point of insertion, return the list of new PWCs """
+        poi = bless_poi(poi)
         poic:PWC = self.at(n)
         for i in reversed(range(len(self.pois))):
             if is_parent_of(poic.ctx, self.pois[i].ctx):
                 # assert i != n, f"We surely don't delete the requested POI #{n}"
-                print(f"Removing {i}")
+                # print(f"Removing {i}")
                 assert not assert_no_delete, f"But we do delete {i} when updating {n}!"
                 del self.pois[i]
         pwcs,_ = contextualize_poi(poi, poic.ctx)
@@ -154,10 +155,12 @@ def contextualize_poi_inplace(poi:POI, ctx:Context, acc:List[PWC]) -> Context:
     acc.extend([POIWithContext(poi, ctx2)] + pwcs)
     return ctx
 
-def build(poi:POI, vscope:Optional[List[VName]]=None) -> Builder:
+def build(poi:POILike, vscope:Optional[List[VName]]=None, ignore_nonempty:bool=True) -> Builder:
+    poi = bless_poi(poi)
     ctx = Context(vscope)
     pwcs,ctx = contextualize_poi(poi, ctx)
-    return Builder([POIWithContext(poi,ctx)] + pwcs)
+    pwcs2 = [p for p in pwcs if p.poi.isempty()] if ignore_nonempty else pwcs
+    return Builder([POIWithContext(poi,ctx)] + pwcs2)
 
 
 

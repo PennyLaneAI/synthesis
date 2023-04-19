@@ -182,6 +182,11 @@ Program = FDefStmt
 def assert_never(x: Any) -> NoReturn:
     raise RuntimeError("Unhandled type: {}".format(type(x).__name__))
 
+def bless_vname(s:Union[VName, str])-> VName:
+    return s if isinstance(s,VName) else VName(s)
+
+def bless_fname(s:Union[FName, str])-> FName:
+    return s if isinstance(s,FName) else FName(s)
 
 def bless_expr(e:ExprLike) -> Expr:
     """ Casts expression-like values to expressions. """
@@ -355,11 +360,27 @@ def saturates_poi1(arg, e):
 trueExpr = ConstExpr(True)
 falseExpr = ConstExpr(False)
 
+def condExpr(cond, trueBranch, falseBranch=None, style=ControlFlowStyle.Default):
+    return CondExpr(bless_expr(cond), bless_poi(trueBranch), bless_poi(falseBranch) if falseBranch
+                    else None, style)
+
+def whileLoopExpr(statevar, cond:ExprLike, body:POILike, style=ControlFlowStyle.Default):
+    return WhileLoopExpr(bless_vname(statevar), bless_expr(cond), bless_poi(body), style)
+
+def forLoopExpr(loopvar, statevar, lbound, ubound, body, style=ControlFlowStyle.Default):
+    return ForLoopExpr(bless_vname(loopvar), bless_poi(lbound), bless_poi(ubound), bless_poi(body),
+                       style, bless_vname(statevar) if statevar else None)
+
+def fdefStmt(fname, args, body, **kwargs):
+    return FDefStmt(bless_fname(fname),
+                    [bless_vname(a) for a in args],
+                    bless_poi(body), **kwargs)
+
 def callExpr(e:Union[str,ExprLike],
              args:List[POILike],
              kwargs:Optional[List[Tuple[str,POILike]]]=None) -> FCallExpr:
     kwargs = kwargs if kwargs is not None else []
-    return FCallExpr(bless_expr(FName(e)) if isinstance(e,str) else bless_expr(e),
+    return FCallExpr(bless_expr(bless_fname(e) if isinstance(e,str) else e),
                      [bless_poi(e) for e in args],
                      [(k,bless_poi(v)) for k,v in kwargs])
 

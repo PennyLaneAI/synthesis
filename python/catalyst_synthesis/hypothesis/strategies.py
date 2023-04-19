@@ -9,7 +9,8 @@ from hypothesis.strategies import (text, decimals, integers, characters, from_re
 
 from ..grammar import (VName, FName, FDefStmt, CondExpr, ForLoopExpr, POI, WhileLoopExpr, trueExpr,
                       falseExpr, ControlFlowStyle, ConstExpr, Expr, VRefExpr, bindUnary, signature,
-                      NoneExpr, FName, FDefStmt, FCallExpr, lessExpr, eqExpr, callExpr)
+                      NoneExpr, FName, FDefStmt, FCallExpr, lessExpr, eqExpr, callExpr,
+                      whileLoopExpr, forLoopExpr, condExpr, fdefStmt)
 
 from ..builder import build
 from ..pprint import pprint
@@ -38,11 +39,7 @@ def fdefs(draw,
           args=vnames(just("arg"))):
     fname=draw(name)
     ags=draw(lists(args,max_size=4,unique=True))
-    return (lambda a:
-            FDefStmt(
-                fname=fname,
-                args=args,
-                body=a))
+    return partial(fdefStmt, fname=fname, args=args, body=POI())
 
 @composite
 def conds(draw,

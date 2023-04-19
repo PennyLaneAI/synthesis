@@ -62,8 +62,8 @@ def _hi(st:PStrState, opt:Optional[PStrOptions], poi:POI) -> List[str]:
     """ Issue a hint formatted as a Python comment """
     hlines = opt.hint(poi) if opt and opt.hint else []
     if len(hlines) > 0:
-        hlines = [f"poi {id(poi)}"] + hlines
-    return [' '*st.indent*TABSTOP + "# " + h for h in hlines]
+        hlines = [f"poi-id: {id(poi)}"] + hlines
+    return [' '*st.indent*TABSTOP + (' '.join(["#", h])).strip() for h in hlines]
 
 
 TABSTOP:int = 4
@@ -99,7 +99,7 @@ def pstr_expr(expr:ExprLike,
     if isinstance(e, FCallExpr):
         return pstr_expr(e.expr, state, opt, arg_expr=e.args, kwarg_expr=e.kwargs)
     elif isinstance(e, CondExpr):
-        assert arg_expr is not None
+        assert arg_expr is not None, "Conditional expression needs to be called like a function without arguments"
         assert len(kwarg_expr)==0
         if _style(e.style, opt) == ControlFlowStyle.Python:
             acc, scond = pstr_expr(e.cond, st, opt)
@@ -107,16 +107,14 @@ def pstr_expr(expr:ExprLike,
             true_part = (
                 _in(st, [f"if {scond}:"]) +
                 _ne(st,
-                    sum([pstr_stmt(s, st1, opt) for s in e.trueBranch.stmts], []) +
-                    (pstr_stmt(assignStmt(VName(svar), e.trueBranch), st1, opt) if
-                     e.trueBranch.expr else [])) +
+                    # sum([pstr_stmt(s, st1, opt) for s in e.trueBranch.stmts], []) +
+                    pstr_stmt(assignStmt(VName(svar), e.trueBranch), st1, opt)) +
                 _hi(st1, opt, e.trueBranch))
             false_part = (
                 _in(st, ["else:"]) +
                 _ne(st,
-                    sum([pstr_stmt(s, st1, opt) for s in e.falseBranch.stmts], []) +
-                    (pstr_stmt(assignStmt(VName(svar), e.falseBranch.expr), st1, opt) if
-                     e.falseBranch.expr else [])) +
+                    # sum([pstr_stmt(s, st1, opt) for s in e.falseBranch.stmts], []) +
+                    pstr_stmt(assignStmt(VName(svar), e.falseBranch), st1, opt)) +
                 _hi(st1, opt, e.falseBranch)) if e.falseBranch else []
             return (acc + true_part + false_part, svar)
         elif _style(e.style, opt) == ControlFlowStyle.Catalyst:
@@ -147,7 +145,7 @@ def pstr_expr(expr:ExprLike,
             accU, lexprU = pstr_poi(e.ubound, st, opt)
             return (
                 accArg + accL + accU +
-                _in(st, [f"for {e.loopvar.val} in range({lexprL},{lexprU}):"]) +
+                _in(st, [f"for {e.loopvar.val} in range({lexprL}, {lexprU}):"]) +
                 _ne(st, sum([pstr_stmt(s, st1, opt) for s in e.body.stmts], []) +
                         (pstr_stmt(assignStmt(e.statevar,e.body.expr), st1, opt)
                          if e.body.expr and e.statevar else [])) +
@@ -160,7 +158,7 @@ def pstr_expr(expr:ExprLike,
             st1, nforloop = st.tabulate().issue("forloop")
             args = ','.join([e.loopvar.val] + ([e.statevar.val] if e.statevar else []))
             accLoop = (
-                _in(st, [f"@for_loop({lexprL},{lexprU},1)",
+                _in(st, [f"@for_loop({lexprL}, {lexprU}, 1)",
                          f"def {nforloop}({args}):"]) +
                 _ne(st, sum([pstr_stmt(s, st1, opt) for s in e.body.stmts], []) +
                         (pstr_stmt(RetStmt(e.body.expr), st1, opt) if e.body.expr else [])) +
@@ -191,7 +189,7 @@ def pstr_expr(expr:ExprLike,
             st1, nwhileloop = st.tabulate().issue("whileloop")
             return (
                 accArg + accCond +
-                _in(st, [f"@while_loop(lambda {e.statevar.val}:{lexpr})",
+                _in(st, [f"@while_loop(lambda {e.statevar.val}: {lexpr})",
                          f"def {nwhileloop}({e.statevar.val}):"]) +
                 _ne(st, sum([pstr_stmt(s, st1, opt) for s in e.body.stmts],[]) +
                         (pstr_stmt(RetStmt(e.body.expr), st1, opt) if e.body.expr else [])) +
@@ -277,7 +275,7 @@ def _builder_hint_printer(b):
     def _hp(poi:POI) -> List[str]:
         for poic in b.pois:
             if poi is poic.poi:
-                return [', '.join(v.val for v in sorted(poic.ctx.get_vscope()))]
+                return [' '.join(['poi-var:',(', '.join(v.val for v in sorted(poic.ctx.get_vscope())))])]
         return []
     return _hp
 

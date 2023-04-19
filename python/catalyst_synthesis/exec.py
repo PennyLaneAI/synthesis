@@ -20,8 +20,9 @@ try:
 except ImportError:
     CATALYST_LOADED = False
 
-from .grammar import (Expr, Stmt, RetStmt, FDefStmt, VName, FName, VRefExpr, isinstance_expr, POI,
-                      ControlFlowStyle, POILike, bless_poi, isinstance_stmt)
+from .grammar import (Expr, Stmt, RetStmt, VName, FName, VRefExpr, isinstance_expr, POI,
+                      ControlFlowStyle, POILike, bless_poi, isinstance_stmt, fdefStmt, assignStmt_,
+                      callExpr)
 from .pprint import pstr_stmt, pstr_expr, pprint, PStrOptions
 from .builder import build
 
@@ -31,10 +32,12 @@ PythonObj = Any
 
 
 def wrapInMain(p:POILike, name:Optional[str]=None, args:Optional[List[Expr]]=None, use_qjit:bool=True,
+               measure_quantum_state:bool=False,
                **kwargs) -> Stmt:
     name = name if name is not None else "main"
     args = args if args is not None else []
-    return FDefStmt(FName(name), args, bless_poi(p), qjit=use_qjit, **kwargs)
+    body = POI([assignStmt_(p)], callExpr(FName("qml.state"),[])) if measure_quantum_state else p
+    return fdefStmt(name, args, body, qjit=use_qjit, **kwargs)
 
 
 def compilePOI(p:POILike,
@@ -119,7 +122,7 @@ def evalPOI(p:Union[POI,PythonObj],
     arg_exprs = list(zip(*args))[0] if args is not None and len(args)>0 else []
     arg_vals = list(zip(*args))[1] if args is not None and len(args)>0 else []
     name = name if name is not None else "main"
-    o = compileExpr(p, args=arg_exprs, name=name, use_qjit=use_qjit, **kwargs)[0] if isinstance(p,POI) else p
+    o = compilePOI(p, args=arg_exprs, name=name, use_qjit=use_qjit, **kwargs)[0] if isinstance(p,POI) else p
     gctx, lctx = {}, {}
     gctx.update(pyenv(use_qjit))
     s = exec(o, gctx, lctx)
@@ -147,7 +150,7 @@ def runPOI(p:POI,
     name = name if name is not None else "main"
     args = args if args is not None else []
     arg_vals = list(zip(*args))[1] if args is not None and len(args)>0 else []
-    main = FDefStmt(FName(name), args, p, qjit=use_qjit, **kwargs)
+    main = fdefStmt(name, args, p, qjit=use_qjit, **kwargs)
     interpreter = interpreter if interpreter is not None else sys.executable
     arg_prints = [pstr_expr(ConstExpr(a))[1] for a in arg_vals]
 

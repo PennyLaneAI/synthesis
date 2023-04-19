@@ -68,10 +68,8 @@ DATADIR = '_synthesis'
 
 def problem_prepare(tag:Optional[str], poi:POI, args, style, use_qjit, **kwargs) -> Problem:
     """ Typical `kwargs` are: name="main", qnode_wires=3. `args` are like `[VName('arg')]`.  """
-    pyobj,code = compilePOI(
-        bindAssign(poi,
-                   lambda e: POI([assignStmt_(e)],callExpr(FName("qml.state"),[]))),
-        args=args, use_qjit=use_qjit, default_cfstyle=style, **kwargs)
+    pyobj, code = compilePOI(poi,
+        args=args, use_qjit=use_qjit, default_cfstyle=style, measure_quantum_state=True, **kwargs)
     h = sha256(str(pstr(poi,default_cfstyle=ControlFlowStyle.Python)).encode("utf-8")).hexdigest()[:6]
     pdir = join(DATADIR,f"problem{('_'+tag) if tag is not None else ''}_{h}")
     if style is ControlFlowStyle.Catalyst:
