@@ -275,7 +275,8 @@ def foo(arg):
 ### Evaluating a program
 
 We provide `evalPOI` function to evaluate the program using Python's `eval` built-in method and
-`runPOI` to output the program as a file and run it as a subprocess.
+`runPOI` to output the program as a file and run it as a subprocess. In the next section we show how
+to use the former.
 
 ### Enumerating program by specification
 
