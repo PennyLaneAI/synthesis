@@ -398,9 +398,11 @@ References
 
 [1]: https://arxiv.org/pdf/1707.03744v1.pdf "P-Tree programming"
   - 2018, Oesch, *P-Tree programming*
-  - https://paperswithcode.com/paper/p-tree-programming
+    + https://arxiv.org/pdf/1707.03744v1.pdf
+    + https://paperswithcode.com/paper/p-tree-programming
 
 [2]: https://arxiv.org/pdf/2202.13633v1.pdf "Fantastic Morphisms and Where to Find Them A Guide to Recursion Schemes"
   - 2019, Yang, Wu, *Fantastic Morphisms and Where to Find Them A Guide to Recursion Schemes*
+    + https://arxiv.org/pdf/2202.13633v1.pdf
 
 
