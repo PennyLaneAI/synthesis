@@ -102,7 +102,8 @@ Notes:
 
 * Control-flow instructions are functions rather than statements due to Catalyst/JAX requirements.
 * `POI` stands for Points Of Insertion - an auxiliary structure allowing users to cut and navigate
-  across the partially-built AST.
+  across the partially-built AST. This design might also serve as an adaptation to the future
+  application of the advanced recursion schemes such as [Catamorphisms][2].
 
 ### AST manipulation functions
 
