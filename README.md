@@ -35,15 +35,15 @@ Contents
 
 * [Features](#features)
 * [Design](#design)
-  * [Abstract syntax tree](#abstract-syntax-tree)
-  * [AST manipulation functions](#ast-manipulation-functions)
-  * [Enumerating programs](#enumerating-programs)
+    * [Abstract syntax tree](#abstract-syntax-tree)
+    * [AST manipulation functions](#ast-manipulation-functions)
+    * [Enumerating programs](#enumerating-programs)
 * [Examples](#examples)
-  * [Working with AST](#working-with-ast)
-  * [Mutable AST updates](#mutable-ast-updates)
-  * [Evaluating a program](#evaluating-a-program)
-  * [Enumerating program by specification](#enumerating-program-by-specification)
-  * [Top-level script pl_c_compare.py](#top-level-script-pl_c_comparepy)
+    * [Working with AST](#working-with-ast)
+    * [Mutable AST updates](#mutable-ast-updates)
+    * [Evaluating a program](#evaluating-a-program)
+    * [Enumerating program by specification](#enumerating-program-by-specification)
+    * [Top-level script pl_c_compare.py](#top-level-script-pl_c_comparepy)
 * [Known issues and limitations](#known-issues-and-limitations)
 
 <!-- vim-markdown-toc -->
@@ -156,7 +156,7 @@ AST elements could be created and nested, but they doesn't look readable in thei
 representation.
 
 ``` python
-c = callExpr(condExpr(lessExpr(VName("i"),0), POI(), POI()), [])
+c = callExpr(condExpr(lessExpr("i",0), POI(), POI()), [])
 l = callExpr(forLoopExpr("i", "state", 0, 10, c), [3])
 f = fdefStmt("foo", ["arg"], l, qnode_device="our.device", qnode_wires=4)
 print(f)
@@ -228,17 +228,19 @@ print(pstr(b))
 def foo(arg):
     @for_loop(0, 10, 1)
     def forloop0(i,state):
-        @cond("i" < 0)
+        @cond(i < 0)
         def cond1():
-            return qml.Hadamard(wires=[2])
+            pass
+            # poi-id: 140169038599392
+            # poi-var: arg, i, state
         @cond1.otherwise
         def cond1():
             pass
-            # poi-id: 139806092521392
+            # poi-id: 140169038599152
             # poi-var: arg, i, state
         return cond1()
     return forloop0(3)
-# poi-id: 139806092521104
+# poi-id: 140170392548880
 # poi-var:
 ## None ##
 ```
@@ -258,7 +260,7 @@ print(pstr(b.pois[0].poi))
 def foo(arg):
     @for_loop(0, 10, 1)
     def forloop0(i,state):
-        @cond("i" < 0)
+        @cond(i < 0)
         def cond1():
             return qml.Hadamard(wires=[2])
         @cond1.otherwise

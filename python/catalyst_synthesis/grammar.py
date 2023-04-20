@@ -182,11 +182,27 @@ Program = FDefStmt
 def assert_never(x: Any) -> NoReturn:
     raise RuntimeError("Unhandled type: {}".format(type(x).__name__))
 
+def vname(s:str) -> VName:
+    return VName(s)
+
+def fname(s:str) -> VName:
+    return FName(s)
+
 def bless_vname(s:Union[VName, str])-> VName:
-    return s if isinstance(s,VName) else VName(s)
+    if isinstance(s,VName):
+        return s
+    elif isinstance(s, str):
+        return vname(s)
+    else:
+        assert_never(s)
 
 def bless_fname(s:Union[FName, str])-> FName:
-    return s if isinstance(s,FName) else FName(s)
+    if isinstance(s,FName):
+        return s
+    elif isinstance(s, str):
+        return fname(s)
+    else:
+        assert_never(s)
 
 def bless_expr(e:ExprLike) -> Expr:
     """ Casts expression-like values to expressions. """
@@ -380,9 +396,9 @@ def callExpr(e:Union[str,ExprLike],
              args:List[POILike],
              kwargs:Optional[List[Tuple[str,POILike]]]=None) -> FCallExpr:
     kwargs = kwargs if kwargs is not None else []
-    return FCallExpr(bless_expr(bless_fname(e) if isinstance(e,str) else e),
-                     [bless_poi(e) for e in args],
-                     [(k,bless_poi(v)) for k,v in kwargs])
+    return FCallExpr(bless_expr(fname(e) if isinstance(e,str) else e),
+                     [bless_poi(vname(a) if isinstance(a,str) else a) for a in args],
+                     [(k,bless_poi(vname(a) if isinstance(a,str) else a)) for k,a in kwargs])
 
 def lessExpr(a,b) -> FCallExpr:
     return callExpr(FName('<'),[a,b])
