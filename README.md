@@ -65,7 +65,7 @@ We develop this library thinking of the following ways of defining the program s
   - `catalyst_synthesis.generator.greedy_enumerator` is included.
 * Random generation in the style of `Hypothesis`.
   - `catalyst_synthesis.hypothesis.strategies.programs` (unfinished) illustrates this approach.
-* Greedy enumeration via P-tree iteration [2].
+* Greedy enumeration via [P-tree iteration][1].
   - Not attempted
 
 Design
@@ -396,10 +396,10 @@ Known issues and limitations
 References
 ----------
 
-* [1] 2019, Yang, Wu, *Fantastic Morphisms and Where to Find Them A Guide to Recursion Schemes*
-  - https://arxiv.org/pdf/2202.13633v1.pdf
-* [2] 2018, Oesch, *P-Tree programming*
+* [1]: 2018, Oesch, *P-Tree programming*
   - https://arxiv.org/pdf/1707.03744v1.pdf
   - https://paperswithcode.com/paper/p-tree-programming
+* [2]: 2019, Yang, Wu, *Fantastic Morphisms and Where to Find Them A Guide to Recursion Schemes*
+  - https://arxiv.org/pdf/2202.13633v1.pdf
 
 
