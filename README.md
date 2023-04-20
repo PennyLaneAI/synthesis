@@ -308,8 +308,8 @@ def forloop0(k1,k2):
 ## qml.CPhaseShift10(0, wires=[forloop0(arg), arg]) ##
 ```
 
-Finally, we print complete program by wrapping it into the top-level function and adding
-a header containing the require imports.
+Finally, we print the complete program by wrapping it into a top-level function and adding
+a header containing the required Python imports.
 
 ``` python
 main = wrapInMain(b.pois[0].poi,
