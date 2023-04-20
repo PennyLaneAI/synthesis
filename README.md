@@ -386,11 +386,15 @@ test was passed. `_` means that the result for this program was already present 
 Known issues and limitations
 ----------------------------
 
-* We currently support only a limited set of Python expressions.
-  - Typechecker is not yet implemented. One can overcome its absence by providing enumerator with a
-    clever specifications making ill-typed programs rare or impossible.
-* The program enumerator outputs non-unique programs which may or may not be a sign of some issue in
+* `greedy_enumerator` quickly becomes slow and impractical. From our experience, more than 4 items
+  in the specification might already overload it.
+* `greedy_enumerator` outputs non-unique programs which may or may not be a sign of some issue in
   the implementation. Some investigation may be required.
+* We currently support only a limited set of Python expressions.
+  - Typechecker is not yet implemented. One can overcome its absence by providing clever
+    specifications making ill-typed programs rare or impossible.
+  - Not much support for vectors, although one might try working with them using the generic
+    approach.
 * Pretty-printing functions use recursion aggressively.
 * There are some issues with multi-processing `pytest` execution.
 
