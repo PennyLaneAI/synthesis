@@ -42,7 +42,7 @@ Contents
     * [Working with AST](#working-with-ast)
     * [Mutable AST updates](#mutable-ast-updates)
     * [Evaluating a program](#evaluating-a-program)
-    * [Enumerating program by specification](#enumerating-program-by-specification)
+    * [Enumerating programs by specification](#enumerating-programs-by-specification)
     * [Top-level script pl_c_compare.py](#top-level-script-pl_c_comparepy)
 * [Known issues and limitations](#known-issues-and-limitations)
 * [References](#references)
@@ -280,7 +280,7 @@ We provide `evalPOI` function to evaluate the program using Python's `eval` buil
 `runPOI` to output the program as a file and run it as a subprocess. In the next section we show how
 to use the former.
 
-### Enumerating program by specification
+### Enumerating programs by specification
 
 Below we show how to create a specification and run the program enumerator. Recall that `POI()`
 stands for `Point Of Insertion`. Theses structures define the cutting-points in a tree.
