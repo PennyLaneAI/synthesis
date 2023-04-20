@@ -20,7 +20,7 @@ from catalyst_synthesis.grammar import (Expr, RetStmt, FCallExpr, VName, FName, 
                                         Signature, bind, saturate_expr, saturates_expr1,
                                         saturates_poi1, saturate_expr1, saturate_poi1, assignStmt,
                                         assignStmt_, callExpr, get_pois, bracketExpr, arrayExpr,
-                                        saturate_poi, gateExpr)
+                                        saturate_poi, gateExpr, constExpr)
 
 from catalyst_synthesis.pprint import (pstr_builder, pstr_stmt, pstr_expr, pprint, pstr,
                                        DEFAULT_CFSTYLE)
@@ -328,7 +328,7 @@ ops = {
     # "DoubleExcitationMinus": gateExpr('qml.DoubleExcitationMinus', 0, wires=[POI(), POI(), POI(), POI()]),
     "QubitCarry": gateExpr('qml.QubitCarry', wires=[POI(), POI(), POI(), POI()]),
     "QubitSum": gateExpr('qml.QubitSum', wires=[POI(), POI(), POI()]),
-    "PauliRot": gateExpr('qml.PauliRot', 0, "XXYY", wires=[POI(), POI(), POI(), POI()]),
+    "PauliRot": gateExpr('qml.PauliRot', 0, constExpr("XXYY"), wires=[POI(), POI(), POI(), POI()]),
     "U1": gateExpr('qml.U1', 0, wires=[POI()]),
     "U2": gateExpr('qml.U2', 0, 0, wires=[POI()]),
     "U3": gateExpr('qml.U3', 0, 0, 0, wires=[POI()]),

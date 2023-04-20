@@ -376,6 +376,10 @@ def saturates_poi1(arg, e):
 trueExpr = ConstExpr(True)
 falseExpr = ConstExpr(False)
 
+def constExpr(c:ConstExprVal) -> ConstExpr:
+    assert isinstance_cval(c), f"{c} could not be casted to a constant"
+    return ConstExpr(c)
+
 def condExpr(cond, trueBranch, falseBranch=None, style=ControlFlowStyle.Default):
     return CondExpr(bless_expr(cond), bless_poi(trueBranch), bless_poi(falseBranch) if falseBranch
                     else None, style)

@@ -1,7 +1,7 @@
 Synthesis
 =========
 
-This repository contains source code for the PennyLane/Catalyst program synthesis library.
+This repository contains source code for the [PennyLane](https://github.com/PennyLaneAI/pennylane)/[Catalyst](https://github.com/PennyLaneAI/catalyst) program synthesis library.
 
 
 Installation
@@ -11,8 +11,8 @@ We do not provide any packaging at the moment. To use the library one typically 
 
 1. Clone this repository.
 2. Install the dependencies. Synthesis mostly uses standard Python libraries but the
-   generated programs may depend on `Catalyst`, `PennyLane` and `Jax` libraries. We also provide a
-   set of optional `Hypothesis` rules.
+   generated programs may depend on `PennyLane`, `Catalyst` and `Jax` libraries. We also provide a
+   set of optional [Hypothesis](https://hypothesis.readthedocs.io/en/latest/) rules.
    ``` sh
    $ pip install pennylane catalyst hypothesis
    ```
@@ -45,6 +45,7 @@ Contents
     * [Enumerating program by specification](#enumerating-program-by-specification)
     * [Top-level script pl_c_compare.py](#top-level-script-pl_c_comparepy)
 * [Known issues and limitations](#known-issues-and-limitations)
+* [References](#references)
 
 <!-- vim-markdown-toc -->
 
@@ -53,18 +54,18 @@ Features
 --------
 
 * Abstract syntax tree definitions in Python.
-* AST manipulation functions.
+* Functions for AST manipulation.
 * Pretty-printing functions.
 * An automated program enumeration procedure.
-* Set of Hypothesis strategies.
+* A set of Hypothesis strategies.
 
 We develop this library thinking of the following ways of defining the program synthesis procedures:
 
-* Greedy enumeration, combinatoric approach.
-  - `greedy_enumerator()` (included) illustrates this approach.
+* Greedy enumeration, the combinatoric approach.
+  - `catalyst_synthesis.generator.greedy_enumerator` is included.
 * Random generation in the style of `Hypothesis`.
-  - Should not be hard to implement.
-* Greedy enumeration via P-tree iteration.
+  - `catalyst_synthesis.hypothesis.strategies.programs` (unfinished) illustrates this approach.
+* Greedy enumeration via P-tree iteration [2].
   - Not attempted
 
 Design
@@ -384,12 +385,21 @@ test was passed. `_` means that the result for this program was already present 
 Known issues and limitations
 ----------------------------
 
+* We currently support only a limited set of Python expressions.
+  - Typechecker is not yet implemented. One can overcome its absence by providing enumerator with a
+    clever specifications making ill-typed programs rare or impossible.
 * The program enumerator outputs non-unique programs which may or may not be a sign of some issue in
   the implementation. Some investigation may be required.
 * Pretty-printing functions use recursion aggressively.
-* Typechecker is not yet implemented. One can overcome its absence by providing enumerator with a
-  clever specifications making ill-typed programs rare or impossible.
 * There are some issues with multi-processing `pytest` execution.
 
+References
+----------
+
+* [1] 2019, Yang, Wu, *Fantastic Morphisms and Where to Find Them A Guide to Recursion Schemes*
+  - https://arxiv.org/pdf/2202.13633v1.pdf
+* [2] 2018, Oesch, *P-Tree programming*
+  - https://arxiv.org/pdf/1707.03744v1.pdf
+  - https://paperswithcode.com/paper/p-tree-programming
 
 
