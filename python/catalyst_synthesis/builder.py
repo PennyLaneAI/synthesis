@@ -105,12 +105,14 @@ def contextualize_expr(e:Expr, ctx:Optional[Context]=None) -> List[PWC]:
         if e.falseBranch is not None:
             contextualize_poi_inplace(e.falseBranch, Context(parent=ctx), acc)
     elif isinstance(e, ForLoopExpr):
+        contextualize_poi_inplace(e.arg, Context(parent=ctx), acc)
         contextualize_poi_inplace(e.lbound, Context(parent=ctx), acc)
         contextualize_poi_inplace(e.ubound, Context(parent=ctx), acc)
         ctx1 = Context(parent=ctx, statevar=e.statevar,
                        vscope=[e.loopvar] + ([e.statevar] if e.statevar else []))
         contextualize_poi_inplace(e.body, ctx1, acc)
     elif isinstance(e, WhileLoopExpr):
+        contextualize_poi_inplace(e.arg, Context(parent=ctx), acc)
         acc.extend(contextualize_expr(e.cond, ctx))
         ctx1 = Context(parent=ctx, statevar=e.statevar, vscope=[e.statevar])
         contextualize_poi_inplace(e.body, ctx1, acc)
