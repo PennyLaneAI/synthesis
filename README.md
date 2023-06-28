@@ -158,14 +158,14 @@ AST elements could be created and nested, but they doesn't look readable in thei
 representation.
 
 ``` python
-c = callExpr(condExpr(lessExpr("i",0), POI(), POI()), [])
-l = callExpr(forLoopExpr("i", "state", 0, 10, c), [3])
+c = condExpr(lessExpr("i",0), POI(), POI())
+l = forLoopExpr("i", "state", 0, 10, c, 3)
 f = fdefStmt("foo", ["arg"], l, qnode_device="our.device", qnode_wires=4)
 print(f)
 ```
 
 ``` result
-FDefStmt(fname=FName(val='foo'), args=[VName(val='arg')], body=POI(stmts=[], expr=FCallExpr(expr=ForLoopExpr(loopvar=VName(val='i'), lbound=POI(stmts=[], expr=ConstExpr(val=0)), ubound=POI(stmts=[], expr=ConstExpr(val=10)), body=POI(stmts=[], expr=FCallExpr(expr=CondExpr(cond=FCallExpr(expr=VRefExpr(vname=FName(val='<')), args=[POI(stmts=[], expr=VRefExpr(vname=VName(val='i'))), POI(stmts=[], expr=ConstExpr(val=0))], kwargs=[]), trueBranch=POI(stmts=[], expr=None), falseBranch=POI(stmts=[], expr=None), style=<ControlFlowStyle.Default: 0>), args=[], kwargs=[])), style=<ControlFlowStyle.Default: 0>, statevar=VName(val='state')), args=[POI(stmts=[], expr=ConstExpr(val=3))], kwargs=[])), qnode_wires=4, qnode_device='our.device', qjit=False)
+FDefStmt(fname=FName(val='foo'), args=[VName(val='arg')], body=POI(stmts=[], expr=ForLoopExpr(loopvar=VName(val='i'), lbound=POI(stmts=[], expr=ConstExpr(val=0)), ubound=POI(stmts=[], expr=ConstExpr(val=10)), body=POI(stmts=[], expr=CondExpr(cond=FCallExpr(expr=VRefExpr(vname=FName(val='<')), args=[POI(stmts=[], expr=VRefExpr(vname=VName(val='i'))), POI(stmts=[], expr=ConstExpr(val=0))], kwargs=[]), trueBranch=POI(stmts=[], expr=None), falseBranch=POI(stmts=[], expr=None), style=<ControlFlowStyle.Default: 0>)), style=<ControlFlowStyle.Default: 0>, arg=POI(stmts=[], expr=ConstExpr(val=3)), statevar=VName(val='state'))), qnode_wires=4, qnode_device='our.device', qjit=False)
 ```
 
 `pstr_*` functions prints AST in a human-readable form. One can specify either a PennyLane or a
@@ -233,16 +233,16 @@ def foo(arg):
         @cond(i < 0)
         def cond1():
             pass
-            # poi-id: 140169038599392
+            # poi-id: 140229453866528
             # poi-var: arg, i, state
         @cond1.otherwise
         def cond1():
             pass
-            # poi-id: 140169038599152
+            # poi-id: 140229453865184
             # poi-var: arg, i, state
         return cond1()
     return forloop0(3)
-# poi-id: 140170392548880
+# poi-id: 140230799048224
 # poi-var:
 ## None ##
 ```
@@ -288,7 +288,7 @@ stands for `Point Of Insertion`. Theses structures define the cutting-points in 
 ``` python
 specification:List[POILike] = [
     gateExpr("qml.CPhaseShift10", 0, wires=[POI(), POI()]),
-    callExpr(forLoopExpr("k1", "k2", 1, 2, POI(), CFS.Default), [POI()]),
+    forLoopExpr("k1", "k2", 1, 2, body=POI(), arg=POI(), style=CFS.Default),
 ]
 ```
 

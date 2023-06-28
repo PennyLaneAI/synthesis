@@ -38,7 +38,7 @@ class POI:
         return cls.fromExpr(*args, **kwargs)
 
 
-POILike = Union[POI, "ExprLike", "Stmt"]
+POILike = Union[POI, "ExprLike", "Stmt", List["Stmt"]]
 
 
 @dataclass(frozen=True)
@@ -111,6 +111,7 @@ class ForLoopExpr:
     ubound: POI
     body: POI
     style: ControlFlowStyle
+    arg: POI
     statevar: Optional[VName] = None # TODO: Auto-generate this name in `pprint`
 
 @dataclass(frozen=True)
@@ -120,11 +121,12 @@ class WhileLoopExpr:
     cond: Expr
     body: POI
     style: ControlFlowStyle
+    arg: POI
 
 @dataclass(frozen=True)
 class FCallExpr:
     """ Expression - calling a callable """
-    expr: Union[VRefExpr, CondExpr, ForLoopExpr, WhileLoopExpr]
+    expr: VRefExpr
     args: List[POI]
     kwargs: List[Tuple[str,POI]]
 
@@ -150,11 +152,7 @@ class AssignStmt:
     vname: Optional[VName]
     poi: POI
 
-    # @classmethod
-    # def fE(cls, e:Expr) -> "AssignStmt":
-    #     return AssignStmt(None, e)
-
-def assignStmt(v, p):
+def assignStmt(v, p:POILike):
     return AssignStmt(v, bless_poi(p))
 
 def assignStmt_(p):
@@ -223,6 +221,8 @@ def bless_poi(x:POILike) -> POI:
         return POI.fromExpr(bless_expr(x))
     elif isinstance_stmt(x):
         return POI([x],None)
+    elif isinstance(x,list) and all(isinstance_stmt(i) for i in x):
+        return POI(x,None)
     else:
         assert_never(x)
 
@@ -284,9 +284,9 @@ def reduce_stmt_expr(e:Union[Stmt,Expr], f:Callable[[Union[Stmt,Expr],Acc],Acc],
     elif isinstance(e, CondExpr):
         return _down(_unpoi(e.trueBranch) + (_unpoi(e.falseBranch) if e.falseBranch else []))
     elif isinstance(e, ForLoopExpr):
-        return _down(_unpoi(e.lbound) + _unpoi(e.ubound) + _unpoi(e.body))
+        return _down(_unpoi(e.lbound) + _unpoi(e.ubound) + _unpoi(e.body) + _unpoi(e.arg))
     elif isinstance(e, WhileLoopExpr):
-        return _down([e.cond] + _unpoi(e.body))
+        return _down([e.cond] + _unpoi(e.body) + _unpoi(e.arg))
     elif isinstance(e, (NoneExpr, VRefExpr, ConstExpr)):
         return _down([])
     elif isinstance(e, AssignStmt):
@@ -322,9 +322,9 @@ def get_pois(e:Union[Stmt,Expr]) -> List[POI]:
     """ Queries all POIs """
     def _pois(e):
         if isinstance(e, ForLoopExpr):
-            return [e.lbound, e.ubound, e.body]
+            return [e.lbound, e.ubound, e.body, e.arg]
         elif isinstance(e, WhileLoopExpr):
-            return [e.body]
+            return [e.body, e.arg]
         elif isinstance(e, CondExpr):
             return [e.trueBranch] + ([e.falseBranch] if e.falseBranch else [])
         elif isinstance(e, FDefStmt):
@@ -384,12 +384,15 @@ def condExpr(cond, trueBranch, falseBranch=None, style=ControlFlowStyle.Default)
     return CondExpr(bless_expr(cond), bless_poi(trueBranch), bless_poi(falseBranch) if falseBranch
                     else None, style)
 
-def whileLoopExpr(statevar, cond:ExprLike, body:POILike, style=ControlFlowStyle.Default):
-    return WhileLoopExpr(bless_vname(statevar), bless_expr(cond), bless_poi(body), style)
+def whileLoopExpr(statevar, cond:ExprLike, body:POILike, arg=None, style=ControlFlowStyle.Default):
+    return WhileLoopExpr(bless_vname(statevar), bless_expr(cond), bless_poi(body), style,
+                         bless_poi(arg) if arg else POI())
 
-def forLoopExpr(loopvar, statevar, lbound, ubound, body, style=ControlFlowStyle.Default):
-    return ForLoopExpr(bless_vname(loopvar), bless_poi(lbound), bless_poi(ubound), bless_poi(body),
-                       style, bless_vname(statevar) if statevar else None)
+def forLoopExpr(loopvar, statevar, lbound, ubound, body, arg=None, style=ControlFlowStyle.Default):
+    return ForLoopExpr(bless_vname(loopvar), bless_poi(lbound), bless_poi(ubound),
+                       bless_poi(body), style,
+                       bless_poi(arg) if arg else POI(),
+                       bless_vname(statevar) if statevar else None)
 
 def fdefStmt(fname, args, body, **kwargs):
     return FDefStmt(bless_fname(fname),
