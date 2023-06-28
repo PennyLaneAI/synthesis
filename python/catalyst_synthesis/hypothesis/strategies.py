@@ -10,7 +10,7 @@ from hypothesis.strategies import (text, decimals, integers, characters, from_re
 from ..grammar import (VName, FName, FDefStmt, CondExpr, ForLoopExpr, POI, WhileLoopExpr, trueExpr,
                       falseExpr, ControlFlowStyle, ConstExpr, Expr, VRefExpr, bindUnary, signature,
                       NoneExpr, FName, FDefStmt, FCallExpr, lessExpr, eqExpr, callExpr,
-                      whileLoopExpr, forLoopExpr, condExpr, fdefStmt)
+                      whileLoopExpr, forLoopExpr, condExpr, fdefStmt, bless_poi)
 
 from ..builder import build
 from ..pprint import pprint
@@ -59,31 +59,37 @@ def forloops(draw,
              svars=vnames(sampled_from('lmn')),
              lbounds=integers(0,10),
              ubounds=integers(0,10),
-             style=ControlFlowStyle.Default):
+             style=ControlFlowStyle.Default,
+             arg=just(bless_poi(0))):
     loopvar=draw(lvars)
     statevar=draw(svars)
     lbound=POI.fE(ConstExpr(draw(lbounds)))
     ubound=POI.fE(ConstExpr(draw(ubounds)))
+    arg=draw(arg)
     return partial(ForLoopExpr,
                 loopvar=loopvar,
                 statevar=statevar,
                 lbound=lbound,
                 ubound=ubound,
                 body=POI(),
-                style=style)
+                style=style,
+                arg=arg)
 
 @composite
 def whileloops(draw,
                statevars=vnames(sampled_from('ijk')),
                lexpr=lambda x: just(eqExpr(x,ConstExpr(0))),
-               style=ControlFlowStyle.Default):
+               style=ControlFlowStyle.Default,
+               arg=just(bless_poi(0))):
     statevar=draw(statevars)
     cond=draw(lexpr(VRefExpr(statevar)))
+    arg=draw(arg)
     return partial(WhileLoopExpr,
                 statevar=statevar,
                 cond=cond,
                 body=POI(),
-                style=style)
+                style=style,
+                arg=arg)
 
 qml_X = callExpr(FName("qml.X"),[0])
 qml_H = callExpr(FName("qml.Hadamard"),[0])
